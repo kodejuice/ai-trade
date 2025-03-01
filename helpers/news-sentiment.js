@@ -3,6 +3,7 @@ import fetch from "node-fetch";
 import { formatDistanceToNow } from "date-fns";
 
 import { LLMResponse } from "./llm.js";
+import { getCachedData } from './cache.js';
 
 async function getNewsSentiment(text) {
   return LLMResponse({
@@ -19,19 +20,20 @@ async function getNewsSummary(text) {
 }
 
 async function getNewsSummaryAndSentimentLabel(url) {
-  const response = await fetch(url);
-  const html = await response.text();
+  return getCachedData(url, async () => {
+    const response = await fetch(url);
+    const html = await response.text();
 
-  // Parse HTML
-  const dom = new JSDOM(html);
-  const articleDiv = dom.window.document.querySelector("div.article");
-  const articleText = articleDiv ? articleDiv.textContent.trim() : html;
+    // Parse HTML
+    const dom = new JSDOM(html);
+    const articleDiv = dom.window.document.querySelector("div.article");
+    const articleText = articleDiv ? articleDiv.textContent.trim() : html;
 
-  const r = {
-    summary: await getNewsSummary(articleText),
-    sentimentLabel: await getNewsSentiment(articleText),
-  };
-  return r;
+    return {
+      summary: await getNewsSummary(articleText),
+      sentimentLabel: await getNewsSentiment(articleText),
+    };
+  });
 }
 
 export async function getTopNews(news) {

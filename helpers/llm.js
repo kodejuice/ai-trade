@@ -3,6 +3,8 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import dotenv from "dotenv";
 dotenv.config();
 
+import { getCachedData } from "./cache.js";
+
 const getOpenAIReponse = async ({ systemPrompt, userPrompt }) => {
   const client = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
@@ -63,7 +65,9 @@ const getGeminiReponse = async ({ systemPrompt, userPrompt }) => {
 };
 
 export async function LLMResponse({ systemPrompt, userPrompt }) {
-  // const response = await getOpenAIReponse({ systemPrompt, userPrompt });
-  const response = await getGeminiReponse({ systemPrompt, userPrompt });
-  return response;
+  return getCachedData(`${systemPrompt}::${userPrompt}`, async () => {
+    // const response = await getOpenAIReponse({ systemPrompt, userPrompt });
+    const response = await getGeminiReponse({ systemPrompt, userPrompt });
+    return response;
+  });
 }

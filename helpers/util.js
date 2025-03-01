@@ -25,7 +25,10 @@ export function formatCurrency(value) {
 
 export function formatNumber(value) {
   if (value == null) return null;
-  return Number(value).toFixed(2);
+  return Number(value).toLocaleString(undefined, {
+    // minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
 }
 
 export function formatPercentageValue(value) {

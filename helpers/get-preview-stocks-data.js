@@ -24,10 +24,10 @@ import {
 import { getTopNews } from "./news-sentiment.js";
 
 // ----------------------
-// Fetch and Aggregate Stock Data
+// Fetch and Aggregate Stock Data (Preview)
 // ----------------------
 
-export async function getStockData(symbol) {
+export async function getStockPreview(symbol) {
   // Fetch quote summary for fundamentals.
   // Using several modules to get a broad range of fundamental info.
   const modules = [
@@ -87,7 +87,9 @@ export async function getStockData(symbol) {
   // Price Metrics
   // ----------------------
   const currentPrice =
-    historical15minData.length > 0 ? historical15minData[0].close : null;
+    historical15minData.length > 0
+      ? historical15minData.at(-1).close
+      : null;
   const priceMetrics = {
     currentPrice: formatCurrency(currentPrice),
     priceChange15min: computePriceChangePercentage(historical15minData, 1),
@@ -106,15 +108,18 @@ export async function getStockData(symbol) {
   // ----------------------
   // const currentVolume =
   //   historical15minData.length > 0 ? historical15minData[0].volume : null;
-  const _15minData = historical1mData.slice(0, 15);
+  const _15minData = historical1mData.slice(-15);
 
   const volumeMetrics = {
-    "current volume (15 min)": _15minData.reduce(
-      (sum, record) => sum + record.volume || 0,
-      0
+    "current volume (15 min)": formatNumber(
+      _15minData.reduce((sum, record) => sum + record.volume || 0, 0)
     ),
-    "average volume (10 days)": quoteSummary.summaryDetail?.averageVolume10days,
-    "regular market volume": quoteSummary.summaryDetail?.regularMarketVolume,
+    "average volume (10 days)": formatNumber(
+      quoteSummary.summaryDetail?.averageVolume10days
+    ),
+    "regular market volume": formatNumber(
+      quoteSummary.summaryDetail?.regularMarketVolume
+    ),
   };
 
   // ----------------------
@@ -238,7 +243,7 @@ export async function getStockData(symbol) {
         ? formatNumber(quoteSummary.summaryDetail?.trailingPE)
         : undefined,
       "Beta (5Y Monthly)": quoteSummary.summaryDetail?.beta
-        ? quoteSummary.summaryDetail?.beta.toFixed(2)
+        ? quoteSummary.summaryDetail?.beta?.toFixed(2)
         : null,
       marketCap: quoteSummary.price.marketCap
         ? formatCurrency(quoteSummary.price.marketCap)
@@ -311,6 +316,6 @@ export async function getStockData(symbol) {
 // ----------------------
 // Example Usage
 // ----------------------
-getStockData("BTC-USD")
+getStockPreview("BTC-USD")
   .then((data) => console.log(JSON.stringify(data, null, 2)))
   .catch((error) => console.error("Error fetching stock data:", error));
