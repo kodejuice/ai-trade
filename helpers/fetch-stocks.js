@@ -42,9 +42,7 @@ export async function getStockData(symbol) {
   const quoteSummary = await yahooFinance.quoteSummary(symbol, { modules });
   const quote = await yahooFinance.quote(symbol);
   const searchResult = await yahooFinance.search(symbol);
-  const newsAndSentiment = await getTopNews(searchResult.news);
-
-  console.log(news);
+  const newsWithSentiment = await getTopNews(searchResult.news);
 
   // 2 months of daily data for price metrics.
   const _2monthAgo = getTradingDateNDaysAgo(60);
@@ -283,28 +281,10 @@ export async function getStockData(symbol) {
     tradeable: quoteSummary.summaryDetail?.tradeable,
   };
 
-  return fundamentals;
-
   // ----------------------
-  // Sentiment & Recent News (Placeholders)
+  // Sentiment & Recent News
   // ----------------------
-  // Yahoo Finance may provide some news in the quote summary,
-  // but for now we leave these as placeholders.
-  const sentimentNews = {
-    newsSentimentScore: null,
-    sentimentLabel: null,
-  };
-  const recentNews = []; // Placeholder for recent news articles.
-
-  // ----------------------
-  // Economic Indicators (Placeholders)
-  // ----------------------
-  // These can be obtained from other free sources if needed.
-  const economicIndicators = {
-    treasuryYield: null,
-    inflation: null,
-    sectorPerformance: null,
-  };
+  const recentNews = newsWithSentiment;
 
   // ----------------------˚
   // Final Aggregated Data Object
@@ -314,9 +294,8 @@ export async function getStockData(symbol) {
     volumeMetrics,
     technicalIndicators,
     fundamentals,
-    sentimentNews,
     recent_news: recentNews,
-    economicIndicators,
+    // economicIndicators,
   };
 }
 
