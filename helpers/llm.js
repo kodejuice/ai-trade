@@ -58,7 +58,7 @@ const getGeminiReponse = async ({ systemPrompt, userPrompt }) => {
 
     return result.response.text();
   } catch (error) {
-    return "N/A";
+    return getOpenAIReponse({ systemPrompt, userPrompt });
   }
 };
 

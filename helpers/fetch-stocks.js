@@ -23,9 +23,8 @@ import {
 } from "technicalindicators";
 import { getTopNews } from "./news-sentiment.js";
 
-
 // ----------------------
-// Main Function: Fetch and Aggregate Stock Data
+// Fetch and Aggregate Stock Data
 // ----------------------
 
 export async function getStockData(symbol) {
@@ -212,73 +211,83 @@ export async function getStockData(symbol) {
   // Quote Summary (Fundamentals)
   // ----------------------
   const fundamentals = {
-    // REGULAR
-    // CLOSED
-    // PRE
-    // PREPRE
-    // POST
-    // POSTPOST
-    marketState: quote.marketState,
-
-    "Day's Range": `${
-      formatCurrency(quoteSummary.price.regularMarketDayLow)} - ${formatCurrency(quoteSummary.price.regularMarketDayHigh)
-    }`,
-
-    "52 Week Range": `${
-      formatCurrency(quoteSummary.summaryDetail?.fiftyTwoWeekLow)} - ${formatCurrency(quoteSummary.summaryDetail?.fiftyTwoWeekHigh)
-    }`,
-    
-    "50Day Average": formatCurrency(quoteSummary.summaryDetail?.fiftyDayAverage),
-    "200Day Average": formatCurrency(quoteSummary.summaryDetail?.twoHundredDayAverage),
-
-    "TrailingPE": quoteSummary.summaryDetail?.trailingPE ? quoteSummary.summaryDetail?.trailingPE.toFixed(2) : undefined,
-    "ForwardPE": quoteSummary.summaryDetail?.forwardPE ? quoteSummary.summaryDetail?.forwardPE.toFixed(2) : undefined,
-
-    "Beta (5Y Monthly)": quoteSummary.summaryDetail?.beta.toFixed(2),
-
-    marketCap: quoteSummary.price.marketCap
-      ? formatCurrency(quoteSummary.price.marketCap)
-      : undefined,
-
-    "PE Ratio (TTM)": quoteSummary.summaryDetail?.trailingPE
-      ? formatNumber(quoteSummary.summaryDetail?.trailingPE)
-      : undefined,
-
-    "EPS (TTM)": quote.epsTrailingTwelveMonths
-      ? formatCurrency(quote.epsTrailingTwelveMonths)
-      : undefined,
-
-    DividendYield: quoteSummary.summaryDetail?.dividendYield
-      ? formatPercentageValue(quoteSummary.summaryDetail?.dividendYield * 100)
-      : undefined,
-
-    "Revenue": quoteSummary.financialData?.totalRevenue
-      ? formatCurrency(quoteSummary.financialData?.totalRevenue)
-      : undefined,
-
-    "Profit Margin": quoteSummary.financialData?.profitMargins
-      ? formatPercentageValue(quoteSummary.financialData?.profitMargins)
-      : undefined,
-
-    DebtToEquity: quoteSummary.summaryDetail?.debtToEquity,
-    "Return On Equity": formatPercentageValue(quoteSummary.financialData?.returnOnEquity),
-    "Revenue Growth": formatPercentageValue(quoteSummary.financialData?.revenueGrowth),
-
-    "Recommendation Mean": quoteSummary.financialData?.recommendationMean,
-    "Recommendation Key": quoteSummary.financialData?.recommendationKey,
-    "Number Of Analyst Opinions": quoteSummary.financialData?.numberOfAnalystOpinions,
-
-    "Regular Market Change Percent": formatPercentageValue(quoteSummary.price.regularMarketChangePercent),
-    "Regular Market Price": formatCurrency(quoteSummary.price.regularMarketPrice),
-
-    "bid/ask": {
-      bid: formatCurrency(quoteSummary.summaryDetail?.bid),
-      ask: formatCurrency(quoteSummary.summaryDetail?.ask),
-      "bid size": quoteSummary.summaryDetail?.bidSize,
-      "ask size": quoteSummary.summaryDetail?.askSize,
+    marketStatus: {
+      state: quote.marketState, // REGULAR, CLOSED, PRE, PREPRE, POST, POSTPOST
+      // tradeable: quoteSummary.summaryDetail?.tradeable,
     },
 
-    tradeable: quoteSummary.summaryDetail?.tradeable,
+    priceRanges: {
+      "Day's Range": `${formatCurrency(
+        quoteSummary.price.regularMarketDayLow
+      )} - ${formatCurrency(quoteSummary.price.regularMarketDayHigh)}`,
+      "52 Week Range": `${formatCurrency(
+        quoteSummary.summaryDetail?.fiftyTwoWeekLow
+      )} - ${formatCurrency(quoteSummary.summaryDetail?.fiftyTwoWeekHigh)}`,
+      "50Day Average": formatCurrency(
+        quoteSummary.summaryDetail?.fiftyDayAverage
+      ),
+      "200Day Average": formatCurrency(
+        quoteSummary.summaryDetail?.twoHundredDayAverage
+      ),
+    },
+
+    valuation: {
+      TrailingPE: quoteSummary.summaryDetail?.trailingPE?.toFixed(2),
+      ForwardPE: quoteSummary.summaryDetail?.forwardPE?.toFixed(2),
+      "PE Ratio (TTM)": quoteSummary.summaryDetail?.trailingPE
+        ? formatNumber(quoteSummary.summaryDetail?.trailingPE)
+        : undefined,
+      "Beta (5Y Monthly)": quoteSummary.summaryDetail?.beta
+        ? quoteSummary.summaryDetail?.beta.toFixed(2)
+        : null,
+      marketCap: quoteSummary.price.marketCap
+        ? formatCurrency(quoteSummary.price.marketCap)
+        : undefined,
+    },
+
+    financials: {
+      "EPS (TTM)": quote.epsTrailingTwelveMonths
+        ? formatCurrency(quote.epsTrailingTwelveMonths)
+        : undefined,
+      Revenue: quoteSummary.financialData?.totalRevenue
+        ? formatCurrency(quoteSummary.financialData?.totalRevenue)
+        : undefined,
+      "Profit Margin": quoteSummary.financialData?.profitMargins
+        ? formatPercentageValue(quoteSummary.financialData?.profitMargins)
+        : undefined,
+      DebtToEquity: quoteSummary.summaryDetail?.debtToEquity,
+      "Return On Equity": formatPercentageValue(
+        quoteSummary.financialData?.returnOnEquity
+      ),
+      "Revenue Growth": formatPercentageValue(
+        quoteSummary.financialData?.revenueGrowth
+      ),
+      DividendYield: quoteSummary.summaryDetail?.dividendYield
+        ? formatPercentageValue(quoteSummary.summaryDetail?.dividendYield * 100)
+        : undefined,
+    },
+
+    analystData: {
+      "Recommendation Mean": quoteSummary.financialData?.recommendationMean,
+      "Recommendation Key": quoteSummary.financialData?.recommendationKey,
+      "Number Of Analyst Opinions":
+        quoteSummary.financialData?.numberOfAnalystOpinions,
+    },
+
+    marketPricing: {
+      "Regular Market Change Percent": formatPercentageValue(
+        quoteSummary.price.regularMarketChangePercent
+      ),
+      "Regular Market Price": formatCurrency(
+        quoteSummary.price.regularMarketPrice
+      ),
+      "bid/ask": {
+        bid: formatCurrency(quoteSummary.summaryDetail?.bid),
+        ask: formatCurrency(quoteSummary.summaryDetail?.ask),
+        "bid size": quoteSummary.summaryDetail?.bidSize,
+        "ask size": quoteSummary.summaryDetail?.askSize,
+      },
+    },
   };
 
   // ----------------------
@@ -302,6 +311,6 @@ export async function getStockData(symbol) {
 // ----------------------
 // Example Usage
 // ----------------------
-getStockData("MSFT")
+getStockData("BTC-USD")
   .then((data) => console.log(JSON.stringify(data, null, 2)))
   .catch((error) => console.error("Error fetching stock data:", error));

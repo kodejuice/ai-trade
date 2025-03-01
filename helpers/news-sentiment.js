@@ -6,7 +6,7 @@ import { LLMResponse } from "./llm.js";
 
 async function getNewsSentiment(text) {
   return LLMResponse({
-    systemPrompt: `Given the following text, classify the sentiment as positive (bullish), negative (bearish), or neutral. Dont include any additional text, just the sentiment label.`,
+    systemPrompt: `Given the following text, classify the sentiment as positive, negative, or neutral. Dont include any additional text, just the sentiment label.`,
     userPrompt: text,
   });
 }
@@ -44,6 +44,8 @@ export async function getTopNews(news) {
   );
 
   const top3News = Array.from(news).slice(0, 3);
+  const timeDistance = (date) =>
+    formatDistanceToNow(new Date(date), { addSuffix: true });
   const newsData = await Promise.all(
     top3News.map(async (item) => {
       const newsDetails = await getNewsSummaryAndSentimentLabel(item.link);
@@ -54,16 +56,19 @@ export async function getTopNews(news) {
         sentimentLabel: newsDetails.sentimentLabel,
         // publisher: item.publisher,
         date: new Date(item.providerPublishTime).toString(),
-        timeAgo: formatDistanceToNow(new Date(item.providerPublishTime), {
-          addSuffix: true,
-        }),
+        timeAgo: timeDistance(item.providerPublishTime),
       };
     })
   );
 
   return {
     overallSentiment: await getNewsSentiment(
-      newsData.map((item) => item.summary).join("\n\n---\n\n")
+      newsData
+        .map(
+          (item) =>
+            `${item.summary}\nWhen?: ${timeDistance(item.date)}`
+        )
+        .join("\n\n---\n\n")
     ),
     news: newsData,
   };
