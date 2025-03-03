@@ -23,10 +23,11 @@ import {
 } from "technicalindicators";
 import { getTopNews } from "./news-sentiment.js";
 
-// ----------------------
-// Fetch and Aggregate Stock Data (Preview)
-// ----------------------
-
+/**
+ * Fetches and returns fundamental data for the given stock symbol.
+ * The function retrieves various financial metrics, market pricing information,
+ * and analyst data from the Yahoo Finance API.
+ */
 export async function getFundamentals(symbol) {
   const modules = [
     "price",
@@ -38,7 +39,7 @@ export async function getFundamentals(symbol) {
   ];
   const quoteSummary = await yahooFinance.quoteSummary(symbol, { modules });
   const quote = await yahooFinance.quote(symbol);
-  
+
   const fundamentals = {
     marketStatus: {
       state: quote.marketState,
@@ -121,11 +122,39 @@ export async function getFundamentals(symbol) {
   return { quoteSummary, quote, fundamentals };
 }
 
-export async function getStockPreview(symbol) {
-  const { quoteSummary, fundamentals } = await getFundamentals(symbol);
-  const searchResult = await yahooFinance.search(symbol);
-  const newsWithSentiment = await getTopNews(searchResult.news);
+/**
+ * Calculates various price metrics for a stock based on historical price data.
+ * including the current price, price changes over different time periods
+ */
+export async function getPriceMetrics({
+  historical1m,
+  historical5m,
+  historical15min,
+  historicalDaily,
+}) {
+  const currentPrice =
+    historical1m.quotes.length > 0 ? historical1m.quotes.at(-1).close : null;
+  const priceMetrics = {
+    currentPrice: formatCurrency(currentPrice),
+    priceChange5min: computePriceChangePercentage(historical5m.quotes, 1),
+    priceChange15min: computePriceChangePercentage(historical15min.quotes, 1),
+    priceChange30min: computePriceChangePercentage(historical15min.quotes, 2),
+    priceChange1hr: computePriceChangePercentage(historical15min.quotes, 4),
+    priceChange3hr: computePriceChangePercentage(historical15min.quotes, 12),
+    priceChange7hr: computePriceChangePercentage(historical15min.quotes, 28),
+    priceChange1day: computePriceChangePercentage(historicalDaily.quotes, 1),
+    priceChange3days: computePriceChangePercentage(historicalDaily.quotes, 3),
+    priceChange7days: computePriceChangePercentage(historicalDaily.quotes, 7),
+    priceChange30days: computePriceChangePercentage(historicalDaily.quotes, 30),
+  };
+  return priceMetrics;
+}
 
+/**
+ * Fetches historical stock data for the given symbol at different time intervals.
+ * Returns an object containing the historical data for daily, 15-minute, 5-minute, and 1-minute intervals.
+ */
+export async function getHistoricallData(symbol) {
   // 2 months of daily data for price metrics.
   const _2monthAgo = getTradingDateNDaysAgo(60);
   const historicalDaily = await yahooFinance.chart(symbol, {
@@ -147,11 +176,133 @@ export async function getStockPreview(symbol) {
     period1: _15minAgo,
     interval: "1m",
   });
+
   // For intraday (5min intervals)
   const historical5m = await yahooFinance.chart(symbol, {
     period1: _15minAgo,
     interval: "5m",
   });
+
+  return { historical1m, historical5m, historical15min, historicalDaily };
+}
+
+/**
+ * Calculates various technical indicators based on the provided historical stock data.
+ */
+export function getTechnicalIndicators({ historicalData }) {
+  var historicalCloseData = historicalData.map((data) => data.close);
+  var historicalHighData = historicalData.map((data) => data.high);
+  var historicalLowData = historicalData.map((data) => data.low);
+  var historicalVolumeData = historicalData.map((data) => data.volume);
+
+  const movingAverage10hr = sma({ period: 40, values: historicalCloseData }); // assuming 15min interval, 15*40 = 600min = 10hrs
+  const movingAverage24hr = sma({ period: 96, values: historicalCloseData }); // assuming 15min interval, 15*96 = 1440min = 24hrs
+
+  const RSI = rsi({
+    period: 14,
+    values: historicalCloseData,
+    reversedInput: false,
+  });
+  const MACD = macd({
+    values: historicalCloseData,
+    signalPeriod: 9,
+    slowPeriod: 26,
+    fastPeriod: 12,
+  });
+  const ATR = atr({
+    low: historicalLowData,
+    high: historicalHighData,
+    close: historicalCloseData,
+    period: 14,
+    reversedInput: false,
+  });
+  const EMA5 = ema({
+    period: 5,
+    values: historicalCloseData,
+  });
+  const EMA50 = ema({
+    period: 50,
+    values: historicalCloseData,
+  });
+  const EMA10hr = ema({
+    period: 40, // assuming 15min interval, 15*40 = 600min = 10hrs
+    values: historicalCloseData,
+  });
+  const BBANDS = bollingerbands({
+    period: 20,
+    stdDev: 2,
+    reversedInput: false,
+    values: historicalCloseData,
+  });
+  const STOCH = stochastic({
+    period: 14,
+    high: historicalHighData,
+    low: historicalLowData,
+    close: historicalCloseData,
+    signalPeriod: 3,
+  });
+  const VWAP = vwap({
+    high: historicalHighData,
+    low: historicalLowData,
+    close: historicalCloseData,
+    volume: historicalVolumeData,
+    reversedInput: false,
+  });
+  const OBV = formatNumber(obv({
+    close: historicalCloseData,
+    volume: historicalVolumeData,
+    reversedInput: false,
+  }));
+  const CCI = cci({
+    period: 20,
+    high: historicalHighData,
+    low: historicalLowData,
+    close: historicalCloseData,
+  });
+  const MFI = mfi({
+    period: 14,
+    high: historicalHighData,
+    low: historicalLowData,
+    close: historicalCloseData,
+    volume: historicalVolumeData,
+  });
+  const ADX = adx({
+    period: 14,
+    close: historicalCloseData,
+    high: historicalHighData,
+    low: historicalLowData,
+  });
+
+  return {
+    RSI,
+    MACD,
+    ATR,
+    EMA5,
+    EMA50,
+    EMA10hr,
+    BBANDS,
+    STOCH,
+    VWAP,
+    OBV,
+    CCI,
+    MFI,
+    OBV,
+    ADX,
+    movingAverage10hr,
+    movingAverage24hr,
+  };
+}
+
+// ----------------------
+// Fetch and Aggregate Stock Data (Preview)
+// ----------------------
+export async function getStockPreview(symbol) {
+  const { quoteSummary, fundamentals } = await getFundamentals(symbol);
+  const searchResult = await yahooFinance.search(symbol);
+  const newsWithSentiment = await getTopNews(searchResult.news);
+
+  const { historical1m, historical5m, historical15min, historicalDaily } =
+    await getHistoricallData(symbol);
 
   const historical15minData = Array.from(historical15min.quotes).filter(
     (x) => x.volume > 0
@@ -160,31 +311,15 @@ export async function getStockPreview(symbol) {
     (x) => x.volume > 0
   );
 
-  const _15minLowData = historical15minData.map((x) => x.low);
-  const _15minHighData = historical15minData.map((x) => x.high);
-  const _15minCloseData = historical15minData.map((x) => x.close);
-  const _15minVolumeData = historical15minData.map((x) => x.volume);
-
   // ----------------------
   // Price Metrics
   // ----------------------
-  const currentPrice =
-    historical1m.quotes.length > 0
-      ? historical1m.quotes.at(-1).close
-      : null;
-  const priceMetrics = {
-    currentPrice: formatCurrency(currentPrice),
-    priceChange5min: computePriceChangePercentage(historical5m.quotes, 1),
-    priceChange15min: computePriceChangePercentage(historical15min.quotes, 1),
-    priceChange30min: computePriceChangePercentage(historical15min.quotes, 2),
-    priceChange1hr: computePriceChangePercentage(historical15min.quotes, 4),
-    priceChange3hr: computePriceChangePercentage(historical15min.quotes, 12),
-    priceChange7hr: computePriceChangePercentage(historical15min.quotes, 28),
-    priceChange1day: computePriceChangePercentage(historicalDaily.quotes, 1),
-    priceChange3days: computePriceChangePercentage(historicalDaily.quotes, 3),
-    priceChange7days: computePriceChangePercentage(historicalDaily.quotes, 7),
-    priceChange30days: computePriceChangePercentage(historicalDaily.quotes, 30),
-  };
+  const priceMetrics = getPriceMetrics({
+    historical1m,
+    historical5m,
+    historical15min,
+    historicalDaily,
+  });
 
   // ----------------------
   // Volume Metrics
@@ -206,86 +341,23 @@ export async function getStockPreview(symbol) {
   // ----------------------
   // Technical Indicators
   // ----------------------
+  var technicals = getTechnicalIndicators({
+    historicalData: historical15minData,
+  });
   const technicalIndicatorsData = {
-    movingAverage10hr: sma({ period: 40, values: _15minCloseData }).at(-1), // 15*40 = 600min = 10hrs
-    movingAverage24hr: sma({ period: 96, values: _15minCloseData }).at(-1), // 15*96 = 1440min = 24hrs
-
-    RSI: rsi({
-      period: 14,
-      values: _15minCloseData,
-      reversedInput: false,
-    }).at(-1),
-
-    MACD: macd({
-      values: _15minCloseData,
-      signalPeriod: 9,
-      slowPeriod: 26,
-      fastPeriod: 12,
-    }).at(-1),
-
-    ATR1: atr({
-      low: _15minLowData,
-      high: _15minHighData,
-      close: _15minCloseData,
-      period: 14,
-      reversedInput: false,
-    }).at(-1),
-
-    EMA10hr: ema({
-      period: 40,
-      values: _15minCloseData,
-      reversedInput: false,
-    }).at(-1),
-
-    BBANDS: bollingerbands({
-      period: 20,
-      stdDev: 2,
-      reversedInput: false,
-      values: _15minCloseData,
-    }).at(-1),
-
-    VWAP: vwap({
-      high: _15minHighData,
-      low: _15minLowData,
-      close: _15minCloseData,
-      volume: _15minVolumeData,
-      reversedInput: false,
-    }).at(-1),
-
-    ADX: adx({
-      period: 14,
-      close: _15minCloseData,
-      high: _15minHighData,
-      low: _15minLowData,
-    }).at(-1),
-
-    STOCH: stochastic({
-      period: 14,
-      high: _15minHighData,
-      low: _15minLowData,
-      close: _15minCloseData,
-      signalPeriod: 3,
-    }).at(-1),
-
-    CCI: cci({
-      period: 20,
-      high: _15minHighData,
-      low: _15minLowData,
-      close: _15minCloseData,
-    }).at(-1),
-
-    OBV: obv({
-      close: _15minCloseData,
-      volume: _15minVolumeData,
-    }).at(-1),
-
-    MFI: mfi({
-      period: 14,
-      high: _15minHighData,
-      low: _15minLowData,
-      close: _15minCloseData,
-      volume: _15minVolumeData,
-    }).at(-1),
+    movingAverage10hr: technicals.movingAverage10hr.at(-1),
+    movingAverage24hr: technicals.movingAverage24hr.at(-1),
+    RSI: technicals.RSI.at(-1),
+    MACD: technicals.MACD.at(-1),
+    ATR: technicals.ATR.at(-1),
+    EMA10hr: technicals.EMA10hr.at(-1),
+    BBANDS: technicals.BBANDS.at(-1),
+    VWAP: technicals.VWAP.at(-1),
+    ADX: technicals.ADX.at(-1),
+    STOCH: technicals.STOCH.at(-1),
+    CCI: technicals.CCI.at(-1),
+    OBV: technicals.OBV.at(-1),
+    MFI: technicals.MFI.at(-1),
   };
 
   const technicalIndicators = {

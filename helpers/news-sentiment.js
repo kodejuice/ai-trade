@@ -57,7 +57,7 @@ export async function getTopNews(news) {
         summary: newsDetails.summary,
         sentimentLabel: newsDetails.sentimentLabel,
         // publisher: item.publisher,
-        date: new Date(item.providerPublishTime).toString(),
+        date: new Date(item.providerPublishTime).toLocaleString(),
         timeAgo: timeDistance(item.providerPublishTime),
       };
     })
