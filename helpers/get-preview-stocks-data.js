@@ -5,6 +5,7 @@ import {
   getTradingDateNDaysAgo,
   formatNumber,
   formatPercentageValue,
+  roundObjectValues,
 } from "./util.js";
 
 import {
@@ -126,7 +127,7 @@ export async function getFundamentals(symbol) {
  * Calculates various price metrics for a stock based on historical price data.
  * including the current price, price changes over different time periods
  */
-export async function getPriceMetrics({
+export function getPriceMetrics({
   historical1m,
   historical5m,
   historical15min,
@@ -154,12 +155,13 @@ export async function getPriceMetrics({
  * Fetches historical stock data for the given symbol at different time intervals.
  * Returns an object containing the historical data for daily, 15-minute, 5-minute, and 1-minute intervals.
  */
-export async function getHistoricallData(symbol) {
+export async function getHistoricalData(symbol) {
   // 2 months of daily data for price metrics.
-  const _2monthAgo = getTradingDateNDaysAgo(60);
+  const _2monthAgo = getTradingDateNDaysAgo(62);
   const historicalDaily = await yahooFinance.chart(symbol, {
     period1: _2monthAgo,
     interval: "1d",
+    includePrePost: true,
   });
 
   // For intraday (15min intervals)
@@ -167,6 +169,7 @@ export async function getHistoricallData(symbol) {
   const historical15min = await yahooFinance.chart(symbol, {
     period1: _5daysAgo,
     interval: "15m",
+    includePrePost: true,
   });
 
   // For intraday (1min intervals)
@@ -175,12 +178,15 @@ export async function getHistoricallData(symbol) {
   const historical1m = await yahooFinance.chart(symbol, {
     period1: _15minAgo,
     interval: "1m",
+    includePrePost: true,
   });
 
   // For intraday (5min intervals)
+  const _2daysAgo = getTradingDateNDaysAgo(2);
   const historical5m = await yahooFinance.chart(symbol, {
-    period1: _15minAgo,
+    period1: _2daysAgo,
     interval: "5m",
+    includePrePost: true,
   });
 
   return { historical1m, historical5m, historical15min, historicalDaily };
@@ -220,6 +226,10 @@ export function getTechnicalIndicators({ historicalData }) {
     period: 5,
     values: historicalCloseData,
   });
+  const EMA20 = ema({
+    period: 20,
+    values: historicalCloseData,
+  });
   const EMA50 = ema({
     period: 50,
     values: historicalCloseData,
@@ -248,11 +258,11 @@ export function getTechnicalIndicators({ historicalData }) {
     volume: historicalVolumeData,
     reversedInput: false,
   });
-  const OBV = formatNumber(obv({
+  const OBV = obv({
     close: historicalCloseData,
     volume: historicalVolumeData,
     reversedInput: false,
-  }));
+  });
   const CCI = cci({
     period: 20,
     high: historicalHighData,
@@ -273,17 +283,17 @@ export function getTechnicalIndicators({ historicalData }) {
     low: historicalLowData,
   });
 
-  return {
+  const values = {
     RSI,
     MACD,
     ATR,
     EMA5,
+    EMA20,
     EMA50,
     EMA10hr,
     BBANDS,
     STOCH,
     VWAP,
-    OBV,
     CCI,
     MFI,
     OBV,
@@ -291,6 +301,21 @@ export function getTechnicalIndicators({ historicalData }) {
     movingAverage10hr,
     movingAverage24hr,
   };
+
+  const fullLength = historicalData.length;
+  for (var key in values) {
+    values[key] = roundObjectValues(values[key], 2);
+    if (["OBV", "VWAP"].includes(key)) {
+      values[key] = values[key].map((x) => formatNumber(x));
+    }
+
+    // pad
+    if (values[key].length < fullLength) {
+      values[key] = Array(fullLength - values[key].length).fill(undefined).concat(values[key]);
+    }
+  }
+
+  return values;
 }
 
 // ----------------------
@@ -302,7 +327,7 @@ export async function getStockPreview(symbol) {
   const newsWithSentiment = await getTopNews(searchResult.news);
 
   const { historical1m, historical5m, historical15min, historicalDaily } =
-    await getHistoricallData(symbol);
+    await getHistoricalData(symbol);
 
   const historical15minData = Array.from(historical15min.quotes).filter(
     (x) => x.volume > 0
@@ -385,6 +410,15 @@ export async function getStockPreview(symbol) {
 // ----------------------
 // Example Usage
 // ----------------------
-getStockPreview("MSFT")
-  .then((data) => console.log(JSON.stringify(data, null, 2)))
-  .catch((error) => console.error("Error fetching stock data:", error));
+
+// if (module.main === module) {
+//   const argv = process.argv.slice(2);
+//   const symbol = argv[0] || "AAPL";
+
+//   getStockPreview(symbol)
+//     .then((data) => console.log(JSON.stringify(data, null, 2)))
+//     .catch((error) => console.error("Error fetching stock data:", error));
+// }
+
+
+// STOCH, EMA5, VWAP, BBANDS, RSI, ATR

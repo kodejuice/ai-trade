@@ -1,98 +1,88 @@
-import yahooFinance from "yahoo-finance2";
+import { formatDistanceToNow } from "date-fns";
 
 import {
-  rsi,
-  sma,
-  macd,
-  atr,
-  ema,
-  bollingerbands,
-  vwap,
-  adx,
-  stochastic,
-  cci,
-  obv,
-  mfi,
-} from "technicalindicators";
-import { getTopNews } from "./news-sentiment.js";
-import { getFundamentals } from "./get-preview-stocks-data.js";
+  getFundamentals,
+  getHistoricalData,
+  getPriceMetrics,
+  getTechnicalIndicators,
+} from "./get-preview-stocks-data.js";
+import { formatCurrency, formatNumber } from "./util.js";
 
+const timeDistance = (date) =>
+  formatDistanceToNow(new Date(date), { addSuffix: true });
 
+const showIndicator = (value, tradeType, expected) => {
+  if (tradeType == expected) return value;
+  return undefined;
+};
 
 // ----------------------
 // Fetch and Aggregate Stock Data (With some historical data)
 // ----------------------
-export async function getFullStocksData(symbol, type = "swing") {
-  const { quoteSummary, fundamentals } = await getFundamentals(symbol);
+export async function getFullStocksData(symbol, tradeType = "swing") {
+  const data = {};
 
-  /*
-  scalp trading data
+  const historicalData = await getHistoricalData(symbol);
+  data["priceMetrics"] = await getPriceMetrics(historicalData);
 
-  {
-    priceMetrics: {},
+  const { fundamentals } = await getFundamentals(symbol);
+  data["fundamentals"] = fundamentals;
 
-    fundamentals: {},
+  data["quotes"] = [];
 
-    data: [
-      {
-        date: "3/3/2025, 1:22:09 PM",
-        timeAgo: "15 minutes ago",
-        open: 100,
-        close: 100,
-        low: 95,
-        high: 105,
-        volume: 1000000,
-        technicalIndicators: {
-          RSI: 50,
-          EMA5: 100,
-          BANDS: {
-            upper: 100,
-            lower: 100,
-          },
-          STOCH: {
-            K: 100,
-            D: 100,
-          },
-          VWAP: 100,
-          ATR: 100,
-        },
-      },
-      ...
-    ]
+  if (tradeType === "swing") {
+    const historicalDaily = historicalData.historicalDaily;
+    const historicalDailyData = Array.from(historicalDaily.quotes).filter(
+      (x) => x.volume > 0
+    );
+    data["quotes"] = historicalDailyData;
+  } else if (tradeType === "scalp") {
+    const historicalIntraday = historicalData.historical5m;
+    const historicalIntradayData = Array.from(historicalIntraday.quotes).filter(
+      (x) => x.volume > 0
+    );
+    data["quotes"] = historicalIntradayData;
   }
 
+  var technicals = getTechnicalIndicators({
+    historicalData: data["quotes"],
+  });
 
-  swing trading data
-  {
-    priceMetrics: {},
+  data["quotes"] = data["quotes"].map((quote, index) => {
+    const isLastQuote = index === data["quotes"].length - 1;
+    return {
+      date: isLastQuote ? undefined : new Date(quote.date).toLocaleString(),
+      timeAgo: isLastQuote ? undefined : timeDistance(quote.date),
+      time: isLastQuote ? "latest" : undefined,
+      open: formatCurrency(quote.open),
+      low: formatCurrency(quote.low),
+      high: formatCurrency(quote.high),
+      close: formatCurrency(quote.close),
+      volume: formatNumber(quote.volume),
+      technicalIndicators: {
+        // scalp
+        STOCH: showIndicator(technicals.STOCH[index], tradeType, "scalp"),
+        EMA5: showIndicator(technicals.EMA5[index], tradeType, "scalp"),
+        VWAP: showIndicator(technicals.VWAP[index], tradeType, "scalp"),
 
-    fundamentals: {},
+        // swing
+        MACD: showIndicator(technicals.MACD[index], tradeType, "swing"),
+        EMA20: showIndicator(technicals.EMA20[index], tradeType, "swing"),
+        EMA50: showIndicator(technicals.EMA50[index], tradeType, "swing"),
+        OBV: showIndicator(technicals.OBV[index], tradeType, "swing"),
 
-    data: [
-    {
-        date: "3/3/2025, 1:22:09 PM",
-        timeAgo: "1 day ago",
-        open: 100,
-        close: 100,
-        low: 95,
-        high: 105,
-        volume: 1000000,
-        technicalIndicators: {
-          RSI: 50,
-          MACD: 100,
-          BANDS: {
-            upper: 100,
-            lower: 100,
-          },
-          EMA20: 100,
-          EMA50: 100,
-          OBV: 100,
-          ATR: 100,
-        },
+        // common
+        BBANDS: technicals.BBANDS[index],
+        RSI: technicals.RSI[index],
+        ATR: technicals.ATR[index],
       },
-      ...
-      14 in total
-    ]
-  }
-  */
+    };
+  }).slice(-14);
+
+  return data;
 }
+
+getFullStocksData("META", "swing").then((data) => {
+  console.log(JSON.stringify(data, null, 2));
+});
+

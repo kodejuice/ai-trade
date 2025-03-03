@@ -42,6 +42,25 @@ export function computePriceChangePercentage(data, lag) {
   if (!data || data.length <= lag) return null;
   const latest = data.at(-1);
   const previous = data.at(-lag-1);
+  if (latest == previous) return '0.00%';
   const change = ((latest.close - previous.close) / previous.close) * 100;
-  return `${change.toFixed(2)}%`;
+  return `${change.toFixed(2)}% (${formatCurrency(previous.close)})`;
+}
+
+
+// Function to recursively round values in an object.
+export function roundObjectValues(obj, precision = 2) {
+  if (typeof obj !== 'object' || obj === null) {
+    return typeof obj === 'number' ? Number(obj.toFixed(precision)) : obj;
+  }
+
+  if (Array.isArray(obj)) {
+    return obj.map(item => roundObjectValues(item, precision));
+  }
+
+  const rounded = {};
+  for (const key in obj) {
+    rounded[key] = roundObjectValues(obj[key], precision);
+  }
+  return rounded;
 }
