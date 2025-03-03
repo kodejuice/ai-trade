@@ -40,8 +40,8 @@ export function formatPercentageValue(value) {
 // Assumes data is sorted in descending order (latest first).
 export function computePriceChangePercentage(data, lag) {
   if (!data || data.length <= lag) return null;
-  const latest = data[data.length - 1];
-  const previous = data[lag];
+  const latest = data.at(-1);
+  const previous = data.at(-lag-1);
   const change = ((latest.close - previous.close) / previous.close) * 100;
   return `${change.toFixed(2)}%`;
 }

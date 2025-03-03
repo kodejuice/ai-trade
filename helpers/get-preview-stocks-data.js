@@ -27,9 +27,7 @@ import { getTopNews } from "./news-sentiment.js";
 // Fetch and Aggregate Stock Data (Preview)
 // ----------------------
 
-export async function getStockPreview(symbol) {
-  // Fetch quote summary for fundamentals.
-  // Using several modules to get a broad range of fundamental info.
+export async function getFundamentals(symbol) {
   const modules = [
     "price",
     "summaryDetail",
@@ -40,6 +38,91 @@ export async function getStockPreview(symbol) {
   ];
   const quoteSummary = await yahooFinance.quoteSummary(symbol, { modules });
   const quote = await yahooFinance.quote(symbol);
+  
+  const fundamentals = {
+    marketStatus: {
+      state: quote.marketState,
+    },
+
+    priceRanges: {
+      "Day's Range": `${formatCurrency(
+        quoteSummary.price.regularMarketDayLow
+      )} - ${formatCurrency(quoteSummary.price.regularMarketDayHigh)}`,
+      "52 Week Range": `${formatCurrency(
+        quoteSummary.summaryDetail?.fiftyTwoWeekLow
+      )} - ${formatCurrency(quoteSummary.summaryDetail?.fiftyTwoWeekHigh)}`,
+      "50Day Average": formatCurrency(
+        quoteSummary.summaryDetail?.fiftyDayAverage
+      ),
+      "200Day Average": formatCurrency(
+        quoteSummary.summaryDetail?.twoHundredDayAverage
+      ),
+    },
+
+    valuation: {
+      TrailingPE: quoteSummary.summaryDetail?.trailingPE?.toFixed(2),
+      ForwardPE: quoteSummary.summaryDetail?.forwardPE?.toFixed(2),
+      "PE Ratio (TTM)": quoteSummary.summaryDetail?.trailingPE
+        ? formatNumber(quoteSummary.summaryDetail?.trailingPE)
+        : undefined,
+      "Beta (5Y Monthly)": quoteSummary.summaryDetail?.beta
+        ? quoteSummary.summaryDetail?.beta?.toFixed(2)
+        : null,
+      marketCap: quoteSummary.price.marketCap
+        ? formatCurrency(quoteSummary.price.marketCap)
+        : undefined,
+    },
+
+    financials: {
+      "EPS (TTM)": quote.epsTrailingTwelveMonths
+        ? formatCurrency(quote.epsTrailingTwelveMonths)
+        : undefined,
+      Revenue: quoteSummary.financialData?.totalRevenue
+        ? formatCurrency(quoteSummary.financialData?.totalRevenue)
+        : undefined,
+      "Profit Margin": quoteSummary.financialData?.profitMargins
+        ? formatPercentageValue(quoteSummary.financialData?.profitMargins)
+        : undefined,
+      DebtToEquity: quoteSummary.summaryDetail?.debtToEquity,
+      "Return On Equity": formatPercentageValue(
+        quoteSummary.financialData?.returnOnEquity
+      ),
+      "Revenue Growth": formatPercentageValue(
+        quoteSummary.financialData?.revenueGrowth
+      ),
+      DividendYield: quoteSummary.summaryDetail?.dividendYield
+        ? formatPercentageValue(quoteSummary.summaryDetail?.dividendYield * 100)
+        : undefined,
+    },
+
+    analystData: {
+      "Recommendation Mean": quoteSummary.financialData?.recommendationMean,
+      "Recommendation Key": quoteSummary.financialData?.recommendationKey,
+      "Number Of Analyst Opinions":
+        quoteSummary.financialData?.numberOfAnalystOpinions,
+    },
+
+    marketPricing: {
+      "Regular Market Change Percent": formatPercentageValue(
+        quoteSummary.price.regularMarketChangePercent
+      ),
+      "Regular Market Price": formatCurrency(
+        quoteSummary.price.regularMarketPrice
+      ),
+      "bid/ask": {
+        bid: formatCurrency(quoteSummary.summaryDetail?.bid),
+        ask: formatCurrency(quoteSummary.summaryDetail?.ask),
+        "bid size": quoteSummary.summaryDetail?.bidSize,
+        "ask size": quoteSummary.summaryDetail?.askSize,
+      },
+    },
+  };
+
+  return { quoteSummary, quote, fundamentals };
+}
+
+export async function getStockPreview(symbol) {
+  const { quoteSummary, fundamentals } = await getFundamentals(symbol);
   const searchResult = await yahooFinance.search(symbol);
   const newsWithSentiment = await getTopNews(searchResult.news);
 
@@ -64,10 +147,12 @@ export async function getStockPreview(symbol) {
     period1: _15minAgo,
     interval: "1m",
   });
+  // For intraday (5min intervals)
+  const historical5m = await yahooFinance.chart(symbol, {
+    period1: _15minAgo,
+    interval: "5m",
+  });
 
-  const historicalDailyData = Array.from(historicalDaily.quotes).filter(
-    (x) => x.volume > 0
-  );
   const historical15minData = Array.from(historical15min.quotes).filter(
     (x) => x.volume > 0
   );
@@ -75,9 +160,6 @@ export async function getStockPreview(symbol) {
     (x) => x.volume > 0
   );
 
-  // const dailyCloseData = historicalDailyData.map((x) => x.close);
-  // const _1mCloseData = historical1mData.map((x) => x.close);
-  //
   const _15minLowData = historical15minData.map((x) => x.low);
   const _15minHighData = historical15minData.map((x) => x.high);
   const _15minCloseData = historical15minData.map((x) => x.close);
@@ -87,27 +169,26 @@ export async function getStockPreview(symbol) {
   // Price Metrics
   // ----------------------
   const currentPrice =
-    historical15minData.length > 0
-      ? historical15minData.at(-1).close
+    historical1m.quotes.length > 0
+      ? historical1m.quotes.at(-1).close
       : null;
   const priceMetrics = {
     currentPrice: formatCurrency(currentPrice),
-    priceChange15min: computePriceChangePercentage(historical15minData, 1),
-    priceChange30min: computePriceChangePercentage(historical15minData, 2),
-    priceChange1hr: computePriceChangePercentage(historical15minData, 4),
-    priceChange3hr: computePriceChangePercentage(historical15minData, 12),
-    priceChange7hr: computePriceChangePercentage(historical15minData, 28),
-    priceChange1day: computePriceChangePercentage(historicalDailyData, 1),
-    priceChange3days: computePriceChangePercentage(historicalDailyData, 3),
-    priceChange7days: computePriceChangePercentage(historicalDailyData, 7),
-    priceChange30days: computePriceChangePercentage(historicalDailyData, 30),
+    priceChange5min: computePriceChangePercentage(historical5m.quotes, 1),
+    priceChange15min: computePriceChangePercentage(historical15min.quotes, 1),
+    priceChange30min: computePriceChangePercentage(historical15min.quotes, 2),
+    priceChange1hr: computePriceChangePercentage(historical15min.quotes, 4),
+    priceChange3hr: computePriceChangePercentage(historical15min.quotes, 12),
+    priceChange7hr: computePriceChangePercentage(historical15min.quotes, 28),
+    priceChange1day: computePriceChangePercentage(historicalDaily.quotes, 1),
+    priceChange3days: computePriceChangePercentage(historicalDaily.quotes, 3),
+    priceChange7days: computePriceChangePercentage(historicalDaily.quotes, 7),
+    priceChange30days: computePriceChangePercentage(historicalDaily.quotes, 30),
   };
 
   // ----------------------
   // Volume Metrics
   // ----------------------
-  // const currentVolume =
-  //   historical15minData.length > 0 ? historical15minData[0].volume : null;
   const _15minData = historical1mData.slice(-15);
 
   const volumeMetrics = {
@@ -213,89 +294,6 @@ export async function getStockPreview(symbol) {
   };
 
   // ----------------------
-  // Quote Summary (Fundamentals)
-  // ----------------------
-  const fundamentals = {
-    marketStatus: {
-      state: quote.marketState, // REGULAR, CLOSED, PRE, PREPRE, POST, POSTPOST
-      // tradeable: quoteSummary.summaryDetail?.tradeable,
-    },
-
-    priceRanges: {
-      "Day's Range": `${formatCurrency(
-        quoteSummary.price.regularMarketDayLow
-      )} - ${formatCurrency(quoteSummary.price.regularMarketDayHigh)}`,
-      "52 Week Range": `${formatCurrency(
-        quoteSummary.summaryDetail?.fiftyTwoWeekLow
-      )} - ${formatCurrency(quoteSummary.summaryDetail?.fiftyTwoWeekHigh)}`,
-      "50Day Average": formatCurrency(
-        quoteSummary.summaryDetail?.fiftyDayAverage
-      ),
-      "200Day Average": formatCurrency(
-        quoteSummary.summaryDetail?.twoHundredDayAverage
-      ),
-    },
-
-    valuation: {
-      TrailingPE: quoteSummary.summaryDetail?.trailingPE?.toFixed(2),
-      ForwardPE: quoteSummary.summaryDetail?.forwardPE?.toFixed(2),
-      "PE Ratio (TTM)": quoteSummary.summaryDetail?.trailingPE
-        ? formatNumber(quoteSummary.summaryDetail?.trailingPE)
-        : undefined,
-      "Beta (5Y Monthly)": quoteSummary.summaryDetail?.beta
-        ? quoteSummary.summaryDetail?.beta?.toFixed(2)
-        : null,
-      marketCap: quoteSummary.price.marketCap
-        ? formatCurrency(quoteSummary.price.marketCap)
-        : undefined,
-    },
-
-    financials: {
-      "EPS (TTM)": quote.epsTrailingTwelveMonths
-        ? formatCurrency(quote.epsTrailingTwelveMonths)
-        : undefined,
-      Revenue: quoteSummary.financialData?.totalRevenue
-        ? formatCurrency(quoteSummary.financialData?.totalRevenue)
-        : undefined,
-      "Profit Margin": quoteSummary.financialData?.profitMargins
-        ? formatPercentageValue(quoteSummary.financialData?.profitMargins)
-        : undefined,
-      DebtToEquity: quoteSummary.summaryDetail?.debtToEquity,
-      "Return On Equity": formatPercentageValue(
-        quoteSummary.financialData?.returnOnEquity
-      ),
-      "Revenue Growth": formatPercentageValue(
-        quoteSummary.financialData?.revenueGrowth
-      ),
-      DividendYield: quoteSummary.summaryDetail?.dividendYield
-        ? formatPercentageValue(quoteSummary.summaryDetail?.dividendYield * 100)
-        : undefined,
-    },
-
-    analystData: {
-      "Recommendation Mean": quoteSummary.financialData?.recommendationMean,
-      "Recommendation Key": quoteSummary.financialData?.recommendationKey,
-      "Number Of Analyst Opinions":
-        quoteSummary.financialData?.numberOfAnalystOpinions,
-    },
-
-    marketPricing: {
-      "Regular Market Change Percent": formatPercentageValue(
-        quoteSummary.price.regularMarketChangePercent
-      ),
-      "Regular Market Price": formatCurrency(
-        quoteSummary.price.regularMarketPrice
-      ),
-      "bid/ask": {
-        bid: formatCurrency(quoteSummary.summaryDetail?.bid),
-        ask: formatCurrency(quoteSummary.summaryDetail?.ask),
-        "bid size": quoteSummary.summaryDetail?.bidSize,
-        "ask size": quoteSummary.summaryDetail?.askSize,
-      },
-    },
-  };
-
-  // ----------------------
   // Sentiment & Recent News
   // ----------------------
   const recentNews = newsWithSentiment;
@@ -309,13 +307,12 @@ export async function getStockPreview(symbol) {
     technicalIndicators,
     fundamentals,
     recent_news: recentNews,
-    // economicIndicators,
   };
 }
 
 // ----------------------
 // Example Usage
 // ----------------------
-getStockPreview("BTC-USD")
+getStockPreview("MSFT")
   .then((data) => console.log(JSON.stringify(data, null, 2)))
   .catch((error) => console.error("Error fetching stock data:", error));
