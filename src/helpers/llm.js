@@ -5,7 +5,7 @@ dotenv.config();
 
 import { getCachedData } from "./cache.js";
 
-const getOpenAIReponse = async ({ systemPrompt, userPrompt }) => {
+const getOpenAIReponse = async ({ systemPrompt, userPrompt, model="gpt-4o-mini" }) => {
   const client = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
     maxRetries: 2,
@@ -18,7 +18,7 @@ const getOpenAIReponse = async ({ systemPrompt, userPrompt }) => {
 
   try {
     const completion = await client.chat.completions.create({
-      model: "gpt-4o-mini",
+      model,
       messages: messages,
       temperature: 0.3,
       // max_completion_tokens: 300,
@@ -33,13 +33,13 @@ const getOpenAIReponse = async ({ systemPrompt, userPrompt }) => {
   }
 };
 
-const getGeminiReponse = async ({ systemPrompt, userPrompt }) => {
+const getGeminiReponse = async ({ systemPrompt, userPrompt, model="gemini-2.0-flash-thinking-exp-01-21" }) => {
   try {
     const apiKey = process.env.GEMINI_API_KEY;
     const genAI = new GoogleGenerativeAI(apiKey);
 
-    const model = genAI.getGenerativeModel({
-      model: "gemini-2.0-flash-thinking-exp-01-21",
+    const _model = genAI.getGenerativeModel({
+      model,
       systemInstruction: systemPrompt,
     });
 
@@ -51,7 +51,7 @@ const getGeminiReponse = async ({ systemPrompt, userPrompt }) => {
       responseMimeType: "text/plain",
     };
 
-    const chatSession = model.startChat({
+    const chatSession = _model.startChat({
       generationConfig,
       history: [],
     });

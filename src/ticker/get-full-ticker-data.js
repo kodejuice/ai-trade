@@ -5,8 +5,8 @@ import {
   getHistoricalData,
   getPriceMetrics,
   getTechnicalIndicators,
-} from "./get-preview-stocks-data.js";
-import { formatCurrency, formatNumber } from "./util.js";
+} from "./get-preview-ticker-data.js";
+import { formatCurrency, formatNumber } from "../helpers/util.js";
 
 const timeDistance = (date) =>
   formatDistanceToNow(new Date(date), { addSuffix: true });
@@ -17,13 +17,15 @@ const showIndicator = (value, tradeType, expected) => {
 };
 
 // ----------------------
-// Fetch and Aggregate Stock Data (With some historical data)
+// Fetch and Aggregate Ticker Data (With some historical data)
 // ----------------------
-export async function getFullStocksData(symbol, tradeType = "swing") {
+export async function getFullTickerData(symbol, tradeType = "swing") {
   const data = {};
 
   const historicalData = await getHistoricalData(symbol);
   data["priceMetrics"] = getPriceMetrics(historicalData);
+
+  // console.log("historicalData", historicalData.historicalDaily);
 
   const { fundamentals } = await getFundamentals(symbol);
   data["fundamentals"] = fundamentals;
@@ -32,14 +34,23 @@ export async function getFullStocksData(symbol, tradeType = "swing") {
 
   if (tradeType === "swing") {
     const historicalDaily = historicalData.historicalDaily;
-    const historicalDailyData = Array.from(historicalDaily.quotes).filter(
-      (x) => x.volume > 0
+    const historicalDailyData = Array.from(historicalDaily.quotes).filter((x) =>
+      symbol.toLowerCase().includes("=x")
+        ? true /* forex quotes dont have volume */
+        : x.volume > 0
     );
+    if (historicalDailyData.length < 1) {
+      return data;
+    }
 
     const historicalIntraday15min = historicalData.historical5m;
     const historicalIntradayData = Array.from(
       historicalIntraday15min.quotes
-    ).filter((x) => x.volume > 0);
+    ).filter((x) =>
+      symbol.toLowerCase().includes("=x")
+        ? true /* forex quotes dont have volume */
+        : x.volume > 0
+    );
     const latestIntraDayData = historicalIntradayData.slice(-5, -1); // [_, ..., X, X, X, X, _]
 
     // Append latest intraday data to historical daily data
@@ -51,7 +62,10 @@ export async function getFullStocksData(symbol, tradeType = "swing") {
   } else if (tradeType === "scalp") {
     const historicalIntraday = historicalData.historical5m;
     const historicalIntradayData = Array.from(historicalIntraday.quotes).filter(
-      (x) => x.volume > 0
+      (x) =>
+        symbol.toLowerCase().includes("=x")
+          ? true /* forex quotes dont have volume */
+          : x.volume > 0
     );
     data["quotes"] = historicalIntradayData;
   }
@@ -96,6 +110,14 @@ export async function getFullStocksData(symbol, tradeType = "swing") {
   return data;
 }
 
-getFullStocksData("META", "swing").then((data) => {
-  console.log(JSON.stringify(data, null, 2));
-});
+if (import.meta.url === `file://${process.argv[1]}`) {
+  const argv = process.argv.slice(2);
+  const symbol = argv[0] || "AAPL";
+  const tradeType = argv[1] || "swing";
+
+  getFullTickerData(symbol, tradeType).then((data) => {
+    console.log(JSON.stringify(data, null, 1));
+    console.log("\nsymbol:", symbol);
+    console.log("tradeType:", tradeType);
+  });
+}

@@ -7,7 +7,7 @@ import { getCachedData } from './cache.js';
 
 async function getNewsSentiment(text) {
   return LLMResponse({
-    systemPrompt: `Given the following text, classify the sentiment as positive, negative, or neutral. Dont include any additional text, just the sentiment label.`,
+    systemPrompt: `Given the following text, classify the sentiment as positive, negative, or neutral. Dont include any additional text, just the single sentiment label.`,
     userPrompt: text,
   });
 }

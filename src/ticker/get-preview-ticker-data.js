@@ -6,7 +6,7 @@ import {
   formatNumber,
   formatPercentageValue,
   roundObjectValues,
-} from "./util.js";
+} from "../helpers/util.js";
 
 import {
   rsi,
@@ -22,7 +22,7 @@ import {
   obv,
   mfi,
 } from "technicalindicators";
-import { getTopNews } from "./news-sentiment.js";
+import { getTopNews } from "../helpers/news-sentiment.js";
 
 /**
  * Fetches and returns fundamental data for the given stock symbol.
@@ -97,12 +97,12 @@ export async function getFundamentals(symbol) {
         : undefined,
     },
 
-    analystData: {
-      "Recommendation Mean": quoteSummary.financialData?.recommendationMean,
-      "Recommendation Key": quoteSummary.financialData?.recommendationKey,
-      "Number Of Analyst Opinions":
-        quoteSummary.financialData?.numberOfAnalystOpinions,
-    },
+    // analystData: {
+    //   "Recommendation Mean": quoteSummary.financialData?.recommendationMean,
+    //   "Recommendation Key": quoteSummary.financialData?.recommendationKey,
+    //   "Number Of Analyst Opinions":
+    //     quoteSummary.financialData?.numberOfAnalystOpinions,
+    // },
 
     marketPricing: {
       "Regular Market Change Percent": formatPercentageValue(
@@ -196,6 +196,10 @@ export async function getHistoricalData(symbol) {
  * Calculates various technical indicators based on the provided historical stock data.
  */
 export function getTechnicalIndicators({ historicalData }) {
+  if (!historicalData || historicalData.every((x) => !x)) {
+    return {};
+  }
+
   var historicalCloseData = historicalData.map((data) => data.close);
   var historicalHighData = historicalData.map((data) => data.high);
   var historicalLowData = historicalData.map((data) => data.low);
@@ -311,7 +315,9 @@ export function getTechnicalIndicators({ historicalData }) {
 
     // pad
     if (values[key].length < fullLength) {
-      values[key] = Array(fullLength - values[key].length).fill(undefined).concat(values[key]);
+      values[key] = Array(fullLength - values[key].length)
+        .fill(undefined)
+        .concat(values[key]);
     }
   }
 
@@ -319,9 +325,9 @@ export function getTechnicalIndicators({ historicalData }) {
 }
 
 // ----------------------
-// Fetch and Aggregate Stock Data (Preview)
+// Fetch and Aggregate Ticker Data (Preview)
 // ----------------------
-export async function getStockPreview(symbol) {
+export async function getTickerPreview(symbol) {
   const { quoteSummary, fundamentals } = await getFundamentals(symbol);
   const searchResult = await yahooFinance.search(symbol);
   const newsWithSentiment = await getTopNews(searchResult.news);
@@ -329,11 +335,15 @@ export async function getStockPreview(symbol) {
   const { historical1m, historical5m, historical15min, historicalDaily } =
     await getHistoricalData(symbol);
 
-  const historical15minData = Array.from(historical15min.quotes).filter(
-    (x) => x.volume > 0
+  const historical15minData = Array.from(historical15min.quotes).filter((x) =>
+    symbol.toLowerCase().includes("=x")
+      ? true /* forex quotes dont have volume */
+      : x.volume > 0
   );
-  const historical1mData = Array.from(historical1m.quotes).filter(
-    (x) => x.volume > 0
+  const historical1mData = Array.from(historical1m.quotes).filter((x) =>
+    symbol.toLowerCase().includes("=x")
+      ? true /* forex quotes dont have volume */
+      : x.volume > 0
   );
 
   // ----------------------
@@ -369,21 +379,23 @@ export async function getStockPreview(symbol) {
   var technicals = getTechnicalIndicators({
     historicalData: historical15minData,
   });
-  const technicalIndicatorsData = {
-    movingAverage10hr: technicals.movingAverage10hr.at(-1),
-    movingAverage24hr: technicals.movingAverage24hr.at(-1),
-    RSI: technicals.RSI.at(-1),
-    MACD: technicals.MACD.at(-1),
-    ATR: technicals.ATR.at(-1),
-    EMA10hr: technicals.EMA10hr.at(-1),
-    BBANDS: technicals.BBANDS.at(-1),
-    VWAP: technicals.VWAP.at(-1),
-    ADX: technicals.ADX.at(-1),
-    STOCH: technicals.STOCH.at(-1),
-    CCI: technicals.CCI.at(-1),
-    OBV: technicals.OBV.at(-1),
-    MFI: technicals.MFI.at(-1),
-  };
+  const technicalIndicatorsData = !technicals.movingAverage10hr
+    ? {}
+    : {
+        movingAverage10hr: technicals.movingAverage10hr.at(-1),
+        movingAverage24hr: technicals.movingAverage24hr.at(-1),
+        RSI: technicals.RSI.at(-1),
+        MACD: technicals.MACD.at(-1),
+        ATR: technicals.ATR.at(-1),
+        EMA10hr: technicals.EMA10hr.at(-1),
+        BBANDS: technicals.BBANDS.at(-1),
+        VWAP: technicals.VWAP.at(-1),
+        ADX: technicals.ADX.at(-1),
+        STOCH: technicals.STOCH.at(-1),
+        CCI: technicals.CCI.at(-1),
+        OBV: technicals.OBV.at(-1),
+        MFI: technicals.MFI.at(-1),
+      };
 
   const technicalIndicators = {
     timeFrame: "15min (latest)",
@@ -411,14 +423,11 @@ export async function getStockPreview(symbol) {
 // Example Usage
 // ----------------------
 
-// if (module.main === module) {
-//   const argv = process.argv.slice(2);
-//   const symbol = argv[0] || "AAPL";
+if (import.meta.url === `file://${process.argv[1]}`) {
+  const argv = process.argv.slice(2);
+  const symbol = argv[0] || "AAPL";
 
-//   getStockPreview(symbol)
-//     .then((data) => console.log(JSON.stringify(data, null, 2)))
-//     .catch((error) => console.error("Error fetching stock data:", error));
-// }
-
-
-// STOCH, EMA5, VWAP, BBANDS, RSI, ATR
+  getTickerPreview(symbol)
+    .then((data) => console.log(JSON.stringify(data, null, 1)))
+    .catch((error) => console.error("Error fetching stock data:", error));
+}
