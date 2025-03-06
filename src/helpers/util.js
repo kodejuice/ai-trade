@@ -44,6 +44,8 @@ export function computePriceChangePercentage(data, lag) {
   const previous = data.at(-lag-1);
   if (latest == previous) return '0.00%';
   const change = ((latest.close - previous.close) / previous.close) * 100;
+  // infinte check
+  if (change === Infinity) return '0.00%';
   return `${change.toFixed(2)}% (${formatCurrency(previous.close)})`;
 }
 
@@ -63,4 +65,8 @@ export function roundObjectValues(obj, precision = 2) {
     rounded[key] = roundObjectValues(obj[key], precision);
   }
   return rounded;
+}
+
+export async function waitFor(seconds) {
+  return new Promise((resolve) => setTimeout(resolve, seconds * 1000));
 }

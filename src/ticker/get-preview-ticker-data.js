@@ -24,107 +24,117 @@ import {
 } from "technicalindicators";
 import { getTopNews } from "../helpers/news-sentiment.js";
 
+yahooFinance.suppressNotices(["yahooSurvey"]);
+
 /**
- * Fetches and returns fundamental data for the given stock symbol.
+ * Fetches and returns fundamental data for the given ticker symbol.
  * The function retrieves various financial metrics, market pricing information,
  * and analyst data from the Yahoo Finance API.
  */
 export async function getFundamentals(symbol) {
-  const modules = [
-    "price",
-    "summaryDetail",
-    "financialData",
-    "defaultKeyStatistics",
-    "summaryProfile",
-    "earningsHistory",
-  ];
-  const quoteSummary = await yahooFinance.quoteSummary(symbol, { modules });
-  const quote = await yahooFinance.quote(symbol);
+  try {
+    const modules = [
+      "price",
+      "summaryDetail",
+      "financialData",
+      "defaultKeyStatistics",
+      "summaryProfile",
+      "earningsHistory",
+    ];
+    const quoteSummary = await yahooFinance.quoteSummary(symbol, { modules });
+    const quote = await yahooFinance.quote(symbol);
 
-  const fundamentals = {
-    marketStatus: {
-      state: quote.marketState,
-    },
-
-    priceRanges: {
-      "Day's Range": `${formatCurrency(
-        quoteSummary.price.regularMarketDayLow
-      )} - ${formatCurrency(quoteSummary.price.regularMarketDayHigh)}`,
-      "52 Week Range": `${formatCurrency(
-        quoteSummary.summaryDetail?.fiftyTwoWeekLow
-      )} - ${formatCurrency(quoteSummary.summaryDetail?.fiftyTwoWeekHigh)}`,
-      "50Day Average": formatCurrency(
-        quoteSummary.summaryDetail?.fiftyDayAverage
-      ),
-      "200Day Average": formatCurrency(
-        quoteSummary.summaryDetail?.twoHundredDayAverage
-      ),
-    },
-
-    valuation: {
-      TrailingPE: quoteSummary.summaryDetail?.trailingPE?.toFixed(2),
-      ForwardPE: quoteSummary.summaryDetail?.forwardPE?.toFixed(2),
-      "PE Ratio (TTM)": quoteSummary.summaryDetail?.trailingPE
-        ? formatNumber(quoteSummary.summaryDetail?.trailingPE)
-        : undefined,
-      "Beta (5Y Monthly)": quoteSummary.summaryDetail?.beta
-        ? quoteSummary.summaryDetail?.beta?.toFixed(2)
-        : null,
-      marketCap: quoteSummary.price.marketCap
-        ? formatCurrency(quoteSummary.price.marketCap)
-        : undefined,
-    },
-
-    financials: {
-      "EPS (TTM)": quote.epsTrailingTwelveMonths
-        ? formatCurrency(quote.epsTrailingTwelveMonths)
-        : undefined,
-      Revenue: quoteSummary.financialData?.totalRevenue
-        ? formatCurrency(quoteSummary.financialData?.totalRevenue)
-        : undefined,
-      "Profit Margin": quoteSummary.financialData?.profitMargins
-        ? formatPercentageValue(quoteSummary.financialData?.profitMargins)
-        : undefined,
-      DebtToEquity: quoteSummary.summaryDetail?.debtToEquity,
-      "Return On Equity": formatPercentageValue(
-        quoteSummary.financialData?.returnOnEquity
-      ),
-      "Revenue Growth": formatPercentageValue(
-        quoteSummary.financialData?.revenueGrowth
-      ),
-      DividendYield: quoteSummary.summaryDetail?.dividendYield
-        ? formatPercentageValue(quoteSummary.summaryDetail?.dividendYield * 100)
-        : undefined,
-    },
-
-    // analystData: {
-    //   "Recommendation Mean": quoteSummary.financialData?.recommendationMean,
-    //   "Recommendation Key": quoteSummary.financialData?.recommendationKey,
-    //   "Number Of Analyst Opinions":
-    //     quoteSummary.financialData?.numberOfAnalystOpinions,
-    // },
-
-    marketPricing: {
-      "Regular Market Change Percent": formatPercentageValue(
-        quoteSummary.price.regularMarketChangePercent
-      ),
-      "Regular Market Price": formatCurrency(
-        quoteSummary.price.regularMarketPrice
-      ),
-      "bid/ask": {
-        bid: formatCurrency(quoteSummary.summaryDetail?.bid),
-        ask: formatCurrency(quoteSummary.summaryDetail?.ask),
-        "bid size": quoteSummary.summaryDetail?.bidSize,
-        "ask size": quoteSummary.summaryDetail?.askSize,
+    const fundamentals = {
+      marketStatus: {
+        state: quote.marketState?.toLowerCase(), // "prepre", "pre", "post", "postpost", "regular", "closed"
       },
-    },
-  };
 
-  return { quoteSummary, quote, fundamentals };
+      priceRanges: {
+        "Day's Range": `${formatCurrency(
+          quoteSummary.price.regularMarketDayLow
+        )} - ${formatCurrency(quoteSummary.price.regularMarketDayHigh)}`,
+        "52 Week Range": `${formatCurrency(
+          quoteSummary.summaryDetail?.fiftyTwoWeekLow
+        )} - ${formatCurrency(quoteSummary.summaryDetail?.fiftyTwoWeekHigh)}`,
+        "50Day Average": formatCurrency(
+          quoteSummary.summaryDetail?.fiftyDayAverage
+        ),
+        "200Day Average": formatCurrency(
+          quoteSummary.summaryDetail?.twoHundredDayAverage
+        ),
+      },
+
+      valuation: {
+        TrailingPE: quoteSummary.summaryDetail?.trailingPE?.toFixed(2),
+        ForwardPE: quoteSummary.summaryDetail?.forwardPE?.toFixed(2),
+        "PE Ratio (TTM)": quoteSummary.summaryDetail?.trailingPE
+          ? formatNumber(quoteSummary.summaryDetail?.trailingPE)
+          : undefined,
+        "Beta (5Y Monthly)": quoteSummary.summaryDetail?.beta
+          ? quoteSummary.summaryDetail?.beta?.toFixed(2)
+          : null,
+        marketCap: quoteSummary.price.marketCap
+          ? formatCurrency(quoteSummary.price.marketCap)
+          : undefined,
+      },
+
+      financials: {
+        "EPS (TTM)": quote.epsTrailingTwelveMonths
+          ? formatCurrency(quote.epsTrailingTwelveMonths)
+          : undefined,
+        Revenue: quoteSummary.financialData?.totalRevenue
+          ? formatCurrency(quoteSummary.financialData?.totalRevenue)
+          : undefined,
+        "Profit Margin": quoteSummary.financialData?.profitMargins
+          ? formatPercentageValue(quoteSummary.financialData?.profitMargins)
+          : undefined,
+        DebtToEquity: quoteSummary.summaryDetail?.debtToEquity,
+        "Return On Equity": formatPercentageValue(
+          quoteSummary.financialData?.returnOnEquity
+        ),
+        "Revenue Growth": formatPercentageValue(
+          quoteSummary.financialData?.revenueGrowth
+        ),
+        DividendYield: quoteSummary.summaryDetail?.dividendYield
+          ? formatPercentageValue(
+              quoteSummary.summaryDetail?.dividendYield * 100
+            )
+          : undefined,
+      },
+
+      // analystData: {
+      //   "Recommendation Mean": quoteSummary.financialData?.recommendationMean,
+      //   "Recommendation Key": quoteSummary.financialData?.recommendationKey,
+      //   "Number Of Analyst Opinions":
+      //     quoteSummary.financialData?.numberOfAnalystOpinions,
+      // },
+
+      marketPricing: {
+        "Regular Market Change Percent": formatPercentageValue(
+          quoteSummary.price.regularMarketChangePercent
+        ),
+        "Regular Market Price": formatCurrency(
+          quoteSummary.price.regularMarketPrice
+        ),
+        "bid/ask": {
+          bid: formatCurrency(quoteSummary.summaryDetail?.bid),
+          ask: formatCurrency(quoteSummary.summaryDetail?.ask),
+          "bid size": quoteSummary.summaryDetail?.bidSize,
+          "ask size": quoteSummary.summaryDetail?.askSize,
+        },
+      },
+    };
+
+    return { quoteSummary, quote, fundamentals };
+  } catch (error) {
+    return {
+      error: "Error fetching fundamental data",
+    };
+  }
 }
 
 /**
- * Calculates various price metrics for a stock based on historical price data.
+ * Calculates various price metrics for a ticker based on historical price data.
  * including the current price, price changes over different time periods
  */
 export function getPriceMetrics({
@@ -152,7 +162,7 @@ export function getPriceMetrics({
 }
 
 /**
- * Fetches historical stock data for the given symbol at different time intervals.
+ * Fetches historical ticker data for the given symbol at different time intervals.
  * Returns an object containing the historical data for daily, 15-minute, 5-minute, and 1-minute intervals.
  */
 export async function getHistoricalData(symbol) {
@@ -193,7 +203,7 @@ export async function getHistoricalData(symbol) {
 }
 
 /**
- * Calculates various technical indicators based on the provided historical stock data.
+ * Calculates various technical indicators based on the provided historical ticker data.
  */
 export function getTechnicalIndicators({ historicalData }) {
   if (!historicalData || historicalData.every((x) => !x)) {
@@ -328,95 +338,107 @@ export function getTechnicalIndicators({ historicalData }) {
 // Fetch and Aggregate Ticker Data (Preview)
 // ----------------------
 export async function getTickerPreview(symbol) {
-  const { quoteSummary, fundamentals } = await getFundamentals(symbol);
-  const searchResult = await yahooFinance.search(symbol);
-  const newsWithSentiment = await getTopNews(searchResult.news);
+  try {
+    const { quoteSummary, fundamentals } = await getFundamentals(symbol);
+    const searchResult = await yahooFinance.search(symbol);
+    const newsWithSentiment = await getTopNews(searchResult.news);
 
-  const { historical1m, historical5m, historical15min, historicalDaily } =
-    await getHistoricalData(symbol);
+    const { historical1m, historical5m, historical15min, historicalDaily } =
+      await getHistoricalData(symbol);
 
-  const historical15minData = Array.from(historical15min.quotes).filter((x) =>
-    symbol.toLowerCase().includes("=x")
-      ? true /* forex quotes dont have volume */
-      : x.volume > 0
-  );
-  const historical1mData = Array.from(historical1m.quotes).filter((x) =>
-    symbol.toLowerCase().includes("=x")
-      ? true /* forex quotes dont have volume */
-      : x.volume > 0
-  );
+    const historical15minData = Array.from(historical15min.quotes).filter((x) =>
+      symbol.toLowerCase().includes("=x")
+        ? true /* forex quotes dont have volume */
+        : x.volume > 0
+    );
+    const historical1mData = Array.from(historical1m.quotes).filter((x) =>
+      symbol.toLowerCase().includes("=x")
+        ? true /* forex quotes dont have volume */
+        : x.volume > 0
+    );
 
-  // ----------------------
-  // Price Metrics
-  // ----------------------
-  const priceMetrics = getPriceMetrics({
-    historical1m,
-    historical5m,
-    historical15min,
-    historicalDaily,
-  });
+    // ----------------------
+    // Price Metrics
+    // ----------------------
+    const priceMetrics = getPriceMetrics({
+      historical1m,
+      historical5m,
+      historical15min,
+      historicalDaily,
+    });
 
-  // ----------------------
-  // Volume Metrics
-  // ----------------------
-  const _15minData = historical1mData.slice(-15);
+    // ----------------------
+    // Volume Metrics
+    // ----------------------
+    const _15minData = historical1mData.slice(-15);
+    const _15minVolume = formatNumber(
+      _15minData.reduce((s, record) => s + record.volume || 0, 0)
+    );
+    const isVolumeEmpty =
+      (quoteSummary.summaryDetail?.regularMarketVolume || 0) === 0 &&
+      (quoteSummary.summaryDetail?.averageVolume10days || 0) === 0;
 
-  const volumeMetrics = {
-    "current volume (15 min)": formatNumber(
-      _15minData.reduce((sum, record) => sum + record.volume || 0, 0)
-    ),
-    "average volume (10 days)": formatNumber(
-      quoteSummary.summaryDetail?.averageVolume10days
-    ),
-    "regular market volume": formatNumber(
-      quoteSummary.summaryDetail?.regularMarketVolume
-    ),
-  };
+    const volumeMetrics = isVolumeEmpty
+      ? {}
+      : {
+          "current volume (15 min)": _15minVolume,
+          "average volume (10 days)": formatNumber(
+            quoteSummary.summaryDetail?.averageVolume10days
+          ),
+          "regular market volume": formatNumber(
+            quoteSummary.summaryDetail?.regularMarketVolume
+          ),
+        };
 
-  // ----------------------
-  // Technical Indicators
-  // ----------------------
-  var technicals = getTechnicalIndicators({
-    historicalData: historical15minData,
-  });
-  const technicalIndicatorsData = !technicals.movingAverage10hr
-    ? {}
-    : {
-        movingAverage10hr: technicals.movingAverage10hr.at(-1),
-        movingAverage24hr: technicals.movingAverage24hr.at(-1),
-        RSI: technicals.RSI.at(-1),
-        MACD: technicals.MACD.at(-1),
-        ATR: technicals.ATR.at(-1),
-        EMA10hr: technicals.EMA10hr.at(-1),
-        BBANDS: technicals.BBANDS.at(-1),
-        VWAP: technicals.VWAP.at(-1),
-        ADX: technicals.ADX.at(-1),
-        STOCH: technicals.STOCH.at(-1),
-        CCI: technicals.CCI.at(-1),
-        OBV: technicals.OBV.at(-1),
-        MFI: technicals.MFI.at(-1),
-      };
+    // ----------------------
+    // Technical Indicators
+    // ----------------------
+    var technicals = getTechnicalIndicators({
+      historicalData: historical15minData,
+    });
+    const technicalIndicatorsData = !technicals.movingAverage10hr
+      ? {}
+      : {
+          movingAverage10hr: technicals.movingAverage10hr.at(-1),
+          movingAverage24hr: technicals.movingAverage24hr.at(-1),
+          RSI: technicals.RSI.at(-1),
+          MACD: technicals.MACD.at(-1),
+          ATR: technicals.ATR.at(-1),
+          EMA10hr: technicals.EMA10hr.at(-1),
+          BBANDS: technicals.BBANDS.at(-1),
+          VWAP: technicals.VWAP.at(-1),
+          ADX: technicals.ADX.at(-1),
+          STOCH: technicals.STOCH.at(-1),
+          CCI: technicals.CCI.at(-1),
+          OBV: technicals.OBV.at(-1),
+          MFI: technicals.MFI.at(-1),
+        };
 
-  const technicalIndicators = {
-    timeFrame: "15min (latest)",
-    data: technicalIndicatorsData,
-  };
+    const technicalIndicators = {
+      timeFrame: "15min (latest)",
+      data: technicalIndicatorsData,
+    };
 
-  // ----------------------
-  // Sentiment & Recent News
-  // ----------------------
-  const recentNews = newsWithSentiment;
+    // ----------------------
+    // Sentiment & Recent News
+    // ----------------------
+    const recentNews = newsWithSentiment;
 
-  // ----------------------˚
-  // Final Aggregated Data Object
-  // ----------------------
-  return {
-    priceMetrics,
-    volumeMetrics,
-    technicalIndicators,
-    fundamentals,
-    recent_news: recentNews,
-  };
+    // ----------------------˚
+    // Final Aggregated Data Object
+    // ----------------------
+    return {
+      priceMetrics,
+      volumeMetrics,
+      technicalIndicators,
+      fundamentals,
+      recent_news: recentNews,
+    };
+  } catch (error) {
+    return {
+      message: "Error fetching ticker data",
+    };
+  }
 }
 
 // ----------------------
@@ -429,5 +451,5 @@ if (import.meta.url === `file://${process.argv[1]}`) {
 
   getTickerPreview(symbol)
     .then((data) => console.log(JSON.stringify(data, null, 1)))
-    .catch((error) => console.error("Error fetching stock data:", error));
+    .catch((error) => console.error("Error fetching ticker data:", error));
 }
