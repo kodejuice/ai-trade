@@ -75,6 +75,7 @@ export const SYMBOLS = {
     "LTCUSD",
     "XRPUSD",
     "BCHUSD",
+    "SOLUSD",
     "AAVEUSD",
     "ADAUSD",
     "ALGOUSD",
@@ -93,15 +94,6 @@ export const SYMBOLS = {
     "LRCUSD",
     "MANAUSD",
     "NEARUSD",
-    "SOLUSD",
-    "UNIUSD",
-    "ZECUSD",
-    "ETCUSD",
-    "TRXUSD",
-    "FETUSD",
-    "ARBUSD",
-    "APTUSD",
-    "SUIUSD",
   ],
 
   stocks: {
