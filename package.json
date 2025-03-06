@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "AI-powered trading bot",
   "main": "src/main.js",
-	"type": "module",
+  "type": "module",
   "scripts": {
     "start": "node src/main.js"
   },
@@ -16,12 +16,13 @@
   "author": "Sochima Biereagu",
   "license": "MIT",
   "dependencies": {
-    "openai": "4.83.0",
     "@google/generative-ai": "0.22.0",
     "date-fns": "^4.1.0",
     "dotenv": "16.4.7",
     "jsdom": "^26.0.0",
     "node-fetch": "3.3.2",
+    "openai": "4.83.0",
+    "redis": "^4.7.0",
     "technicalindicators": "3.1.0",
     "yahoo-finance2": "2.13.3"
   }

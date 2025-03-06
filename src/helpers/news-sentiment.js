@@ -3,7 +3,7 @@ import fetch from "node-fetch";
 import { formatDistanceToNow } from "date-fns";
 
 import { LLMResponse } from "./llm.js";
-import { getCachedData } from './cache.js';
+import { getCachedDataIO } from './cache.js';
 
 async function getNewsSentiment(text) {
   return LLMResponse({
@@ -20,7 +20,7 @@ async function getNewsSummary(text) {
 }
 
 async function getNewsSummaryAndSentimentLabel(url) {
-  return getCachedData(url, async () => {
+  return getCachedDataIO(url, async () => {
     const response = await fetch(url);
     const html = await response.text();
 
