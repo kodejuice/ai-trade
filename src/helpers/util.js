@@ -70,3 +70,9 @@ export function roundObjectValues(obj, precision = 2) {
 export async function waitFor(seconds) {
   return new Promise((resolve) => setTimeout(resolve, seconds * 1000));
 }
+
+export function msToMinutes(ms) {
+  const minutes = Math.floor(ms / 60000);
+  const seconds = ((ms % 60000) / 1000).toFixed(0);
+  return `${minutes}:${seconds.padStart(2, '0')}`;
+}

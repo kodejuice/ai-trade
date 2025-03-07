@@ -1,7 +1,7 @@
 import { getCachedResult } from "../helpers/cache.js";
 import { LLMResponse } from "../helpers/llm.js";
 import { mergeSort } from "../helpers/merge-sort.js";
-import { waitFor } from "../helpers/util.js";
+import { msToMinutes, waitFor } from "../helpers/util.js";
 import {
   getTickerPreview,
   getFundamentals,
@@ -64,16 +64,36 @@ const sortTickers = async (tradeType) => {
   // shuffle
   tickers.sort(() => Math.random() - 0.5);
 
+  const comparisonCount = ~~(tickers.length * Math.log2(tickers.length));
   waitFor(5).then(() => {
-    console.log(`\nsorting ${tickers.length} tickers for ${tradeType} trading`);
+    console.log(
+      `\nsorting ${tickers.length} tickers for ${tradeType} trading\n${comparisonCount} comparisons expected\n`
+    );
   });
 
   const startTime = Date.now();
+  const lastLogTime = startTime;
+
+  let currentComparisonCount = 0;
 
   const sortedTickers = await mergeSort(tickers, async (ticker1, ticker2) => {
     try {
+      currentComparisonCount++;
+
       const data1 = await getTickerPreview(yfinanceMapping.mapSymbol(ticker1));
       const data2 = await getTickerPreview(yfinanceMapping.mapSymbol(ticker2));
+
+      const timeSinceLastLog = Date.now() - lastLogTime;
+      //  5 minutes
+      if (timeSinceLastLog > 1000 * 60 * 5) {
+        lastLogTime = Date.now();
+        console.log(
+          `${currentComparisonCount} comparisons in ${msToMinutes(
+            Date.now() - startTime
+          )}
+Comparisons left: ${comparisonCount - currentComparisonCount}`
+        );
+      }
 
       const comparisonResult = await LLMResponse({
         systemPrompt: `You are a financial analyst. You are given two tickers and their data. You need to compare the two tickers and return (((TICKER_1))) if the first ticker is better than the second ticker for ${tradeType} trading, (TICKER_1) if the second ticker is better than the first ticker, and (((EQUAL))) if the two tickers are equally good for ${tradeType} trading.`,
@@ -118,11 +138,7 @@ Your response should be in the following format:
 
   const endTime = Date.now();
   console.log(
-    `sorted ${tickers.length} tickers in ${(
-      (endTime - startTime) /
-      1000 /
-      60
-    ).toFixed(2)} minutes`
+    `sorted ${tickers.length} tickers in ${msToMinutes(endTime - startTime)}`
   );
 
   return sortedTickers;
