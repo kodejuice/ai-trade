@@ -71,8 +71,13 @@ export async function waitFor(seconds) {
   return new Promise((resolve) => setTimeout(resolve, seconds * 1000));
 }
 
-export function msToMinutes(ms) {
-  const minutes = Math.floor(ms / 60000);
+export function msToTime(ms) {
+  const hours = Math.floor(ms / 3600000);
+  const minutes = Math.floor((ms % 3600000) / 60000);
   const seconds = ((ms % 60000) / 1000).toFixed(0);
+  
+  if (hours > 0) {
+    return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.padStart(2, '0')}`;
+  }
   return `${minutes}:${seconds.padStart(2, '0')}`;
 }

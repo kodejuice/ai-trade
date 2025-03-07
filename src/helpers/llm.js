@@ -33,23 +33,25 @@ const getOpenAIReponse = async ({
 
     return completion.choices[0].message.content;
   } catch (error) {
-    if (`${error}`.includes("RateLimitError: 429")) {
+    if (`${error}`.includes(" (TPM): Limit")) {
       await waitFor(70);
       console.log("(openai) Rate limit exceeded. Waiting for 70 seconds...");
       return getOpenAIReponse({ systemPrompt, userPrompt, model });
     }
 
-    console.error("Error getting chat response:", error);
+    console.error("Error getting chat response:", `${error}`);
     return "N/A";
   }
 };
 
 let geminiModels = [
   "gemini-2.0-flash-thinking-exp-01-21",
-  "gemini-2.0-flash",
-  "gemini-2.0-flash-exp",
-  "gemini-2.0-flash-lite",
+  "gemini-1.5-flash-8b",
   "gemini-1.5-flash",
+  "gemini-1.5-pro",
+  "gemini-2.0-flash-exp",
+  "gemini-2.0-flash",
+  "gemini-2.0-flash-lite",
 ];
 const M = geminiModels.slice();
 const getGeminiReponse = async ({
@@ -93,8 +95,8 @@ const getGeminiReponse = async ({
       for (const fallbackModel of geminiModels.slice(1)) {
         try {
           const res = await tryGeminiModel(fallbackModel);
-          geminiModels = [fallbackModel, ...geminiModels.filter((m) => m !== model)];
-          console.log(`Using ${fallbackModel} as fallback model.`);
+          geminiModels[0] = fallbackModel;
+          // console.log(`Using ${fallbackModel} as fallback model.`);
           return res;
         } catch(err) {
           continue;
@@ -110,8 +112,8 @@ const getGeminiReponse = async ({
 
 export async function LLMResponse({ systemPrompt, userPrompt }) {
   return getCachedDataIO(`${systemPrompt}::${userPrompt}`, async () => {
-    // const response = await getOpenAIReponse({ systemPrompt, userPrompt });
     const response = await getGeminiReponse({ systemPrompt, userPrompt });
+    // const response = await getOpenAIReponse({ systemPrompt, userPrompt });
     return response;
   });
 }

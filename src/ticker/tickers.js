@@ -236,3 +236,14 @@ export const yfinanceMapping = {
     return symbol; // default case
   },
 };
+
+export const getAllTickers = () => {
+  const tickers = [
+    ...SYMBOLS.forex,
+    ...SYMBOLS.crypto,
+    ...SYMBOLS.ETF,
+    ...SYMBOLS.stocks.us,
+    ...SYMBOLS.stocks.japan,
+  ];
+  return tickers.sort(() => Math.random() - 0.5);
+};
