@@ -1,9 +1,10 @@
 import OpenAI from "openai";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import dotenv from "dotenv";
+import crypto from "crypto";
 dotenv.config();
 
-import { getCachedDataIO } from "./cache.js";
+import { getCachedDataIO, getCachedResult } from "./cache.js";
 import { waitFor } from "./util.js";
 // import { TickerComparator } from "../ticker/TickerComparator.js";
 
@@ -88,7 +89,10 @@ const getGeminiReponse = async ({
     return await tryGeminiModel(model);
   } catch (error) {
     if (!`${error}`.includes("429")) {
-      console.log("\n (Non ratelimit error) Error getting chat response:", `${error}\n`);
+      console.log(
+        "\n (Non ratelimit error) Error getting chat response:",
+        `${error}\n`
+      );
       return getOpenAIReponse({ systemPrompt, userPrompt });
     }
 
@@ -98,7 +102,6 @@ const getGeminiReponse = async ({
         try {
           const res = await tryGeminiModel(fallbackModel);
           geminiModels[0] = fallbackModel;
-          // console.log(`Using ${fallbackModel} as fallback model.`);
           return res;
         } catch (err) {
           continue;
@@ -113,10 +116,14 @@ const getGeminiReponse = async ({
 };
 
 export async function LLMResponse({ systemPrompt, userPrompt }) {
-  return getCachedDataIO(`${systemPrompt}::${userPrompt}`, async () => {
-    // console.log(userPrompt.match(/TICKER_1: [a-zA-Z0-9.]+/g)[0]);
-    // console.log(userPrompt.match(/TICKER_2: [a-zA-Z0-9.]+/g)[0]);
-    const response = await getGeminiReponse({ systemPrompt, userPrompt });
-    return response;
-  });
+  const cacheKey = crypto.createHash("sha256").update(userPrompt).digest("hex");
+  return getCachedResult(
+    `${cacheKey}`,
+    async () => {
+      // console.log(userPrompt.match(/TICKER_1: [a-zA-Z0-9.]+/g)[0]);
+      const response = await getGeminiReponse({ systemPrompt, userPrompt });
+      return response;
+    },
+    60 * 60 * 24 // 1 day
+  );
 }

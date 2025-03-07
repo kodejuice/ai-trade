@@ -25,5 +25,8 @@
     "redis": "^4.7.0",
     "technicalindicators": "3.1.0",
     "yahoo-finance2": "2.13.3"
+  },
+  "engines": {
+    "node": "21.x"
   }
 }

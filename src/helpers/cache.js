@@ -44,12 +44,13 @@ export async function getCachedDataIO(key, fetchData) {
 // Redis
 let redisClient;
 
+const lruCache = new LRUCache(200);
+
 export const getCachedResult = async (
   key,
   fetchDataFn,
   expirationSeconds = 780
 ) => {
-  const lruCache = new LRUCache(200);
 
   try {
     // Check LRU cache first

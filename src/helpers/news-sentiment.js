@@ -3,7 +3,7 @@ import fetch from "node-fetch";
 import { formatDistanceToNow } from "date-fns";
 
 import { LLMResponse } from "./llm.js";
-import { getCachedDataIO } from './cache.js';
+import { getCachedResult } from "./cache.js";
 
 async function getNewsSentiment(text) {
   return LLMResponse({
@@ -20,20 +20,24 @@ async function getNewsSummary(text) {
 }
 
 async function getNewsSummaryAndSentimentLabel(url) {
-  return getCachedDataIO(url, async () => {
-    const response = await fetch(url);
-    const html = await response.text();
+  return getCachedResult(
+    url,
+    async () => {
+      const response = await fetch(url);
+      const html = await response.text();
 
-    // Parse HTML
-    const dom = new JSDOM(html);
-    const articleDiv = dom.window.document.querySelector("div.article");
-    const articleText = articleDiv ? articleDiv.textContent.trim() : html;
+      // Parse HTML
+      const dom = new JSDOM(html);
+      const articleDiv = dom.window.document.querySelector("div.article");
+      const articleText = articleDiv ? articleDiv.textContent.trim() : html;
 
-    return {
-      summary: await getNewsSummary(articleText),
-      sentimentLabel: await getNewsSentiment(articleText),
-    };
-  });
+      return {
+        summary: await getNewsSummary(articleText),
+        sentimentLabel: await getNewsSentiment(articleText),
+      };
+    },
+    60 * 60 * 4 // 4 hours
+  );
 }
 
 export async function getTopNews(news) {
@@ -46,8 +50,13 @@ export async function getTopNews(news) {
   );
 
   const top3News = Array.from(news).slice(0, 3);
-  const timeDistance = (date) =>
-    formatDistanceToNow(new Date(date), { addSuffix: true });
+  const timeDistance = (date) => {
+    try {
+      return formatDistanceToNow(new Date(date), { addSuffix: true });
+    } catch (error) {
+      return date;
+    }
+  };
   const newsData = await Promise.all(
     top3News.map(async (item) => {
       const newsDetails = await getNewsSummaryAndSentimentLabel(item.link);
@@ -66,10 +75,7 @@ export async function getTopNews(news) {
   return {
     overallSentiment: await getNewsSentiment(
       newsData
-        .map(
-          (item) =>
-            `${item.summary}\nWhen?: ${timeDistance(item.date)}`
-        )
+        .map((item) => `${item.summary}\nWhen?: ${timeDistance(item.date)}`)
         .join("\n\n---\n\n")
     ),
     news: newsData,

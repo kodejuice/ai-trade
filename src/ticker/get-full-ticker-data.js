@@ -123,9 +123,11 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const symbol = argv[0] || "AAPL";
   const tradeType = argv[1] || "swing";
 
-  getFullTickerData(symbol, tradeType).then((data) => {
-    console.log(JSON.stringify(data, null, 1));
-    console.log("\nsymbol:", symbol);
-    console.log("tradeType:", tradeType);
-  });
+  getFullTickerData(symbol, tradeType)
+    .then((data) => {
+      console.log(JSON.stringify(data, null, 1));
+      console.log("\nsymbol:", symbol);
+      console.log("tradeType:", tradeType);
+    })
+    .finally(() => process.exit(0));
 }

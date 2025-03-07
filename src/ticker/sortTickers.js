@@ -56,6 +56,7 @@ Estimated time remaining: ${timeRemaining}`
   console.log(
     `sorted ${tickers.length} tickers in ${msToTime(Date.now() - startTime)}`
   );
+
   return sortedTickers;
 };
 
@@ -70,6 +71,6 @@ const handleComparisonError = (err, ticker1, ticker2) => {
 const logSortingStart = async (tickerCount, tradeType, comparisonCount) => {
   await waitFor(5);
   console.log(
-    `\nsorting ${tickerCount} tickers for ${tradeType} trading\n${comparisonCount} comparisons expected\n`
+    `\n[sorting ${tickerCount} tickers for <${tradeType}> trading]\n${comparisonCount} comparisons expected\n`
   );
 };

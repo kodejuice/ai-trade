@@ -438,6 +438,7 @@ export async function getTickerPreview(symbol) {
       recent_news: recentNews,
     };
   } catch (error) {
+    console.error("Error fetching ticker data:", error);
     return {
       message: "Error fetching ticker data",
     };
@@ -454,5 +455,6 @@ if (import.meta.url === `file://${process.argv[1]}`) {
 
   getTickerPreview(symbol)
     .then((data) => console.log(JSON.stringify(data, null, 1)))
-    .catch((error) => console.error("Error fetching ticker data:", error));
+    .catch((error) => console.error("Error fetching ticker data:", error))
+    .finally(() => process.exit(0));
 }
