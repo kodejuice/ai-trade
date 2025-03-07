@@ -338,6 +338,9 @@ export function getTechnicalIndicators({ historicalData }) {
 // Fetch and Aggregate Ticker Data (Preview)
 // ----------------------
 export async function getTickerPreview(symbol) {
+  console.log("getTickerPreview", symbol);
+  // process.exit(0);
+
   try {
     const { quoteSummary, fundamentals } = await getFundamentals(symbol);
     const searchResult = await yahooFinance.search(symbol);

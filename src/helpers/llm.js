@@ -5,6 +5,7 @@ dotenv.config();
 
 import { getCachedDataIO } from "./cache.js";
 import { waitFor } from "./util.js";
+// import { TickerComparator } from "../ticker/TickerComparator.js";
 
 const getOpenAIReponse = async ({
   systemPrompt,
@@ -45,13 +46,13 @@ const getOpenAIReponse = async ({
 };
 
 let geminiModels = [
-  "gemini-2.0-flash-thinking-exp-01-21",
-  "gemini-1.5-flash-8b",
-  "gemini-1.5-flash",
-  "gemini-1.5-pro",
-  "gemini-2.0-flash-exp",
-  "gemini-2.0-flash",
   "gemini-2.0-flash-lite",
+  "gemini-2.0-flash-lite-preview-02-05",
+  "gemini-2.0-flash",
+  "gemini-2.0-flash-exp",
+  "gemini-1.5-flash",
+  "gemini-1.5-flash-8b",
+  "gemini-2.0-flash-thinking-exp-01-21",
 ];
 const M = geminiModels.slice();
 const getGeminiReponse = async ({
@@ -87,10 +88,11 @@ const getGeminiReponse = async ({
     return await tryGeminiModel(model);
   } catch (error) {
     if (!`${error}`.includes("429")) {
+      console.log("\n (Non ratelimit error) Error getting chat response:", `${error}\n`);
       return getOpenAIReponse({ systemPrompt, userPrompt });
     }
 
-    // Try fallback models only if using the default model
+    // Try fallback models if rate limit is exceeded
     if (model === geminiModels[0]) {
       for (const fallbackModel of geminiModels.slice(1)) {
         try {
@@ -98,7 +100,7 @@ const getGeminiReponse = async ({
           geminiModels[0] = fallbackModel;
           // console.log(`Using ${fallbackModel} as fallback model.`);
           return res;
-        } catch(err) {
+        } catch (err) {
           continue;
         }
       }
@@ -112,8 +114,9 @@ const getGeminiReponse = async ({
 
 export async function LLMResponse({ systemPrompt, userPrompt }) {
   return getCachedDataIO(`${systemPrompt}::${userPrompt}`, async () => {
+    // console.log(userPrompt.match(/TICKER_1: [a-zA-Z0-9.]+/g)[0]);
+    // console.log(userPrompt.match(/TICKER_2: [a-zA-Z0-9.]+/g)[0]);
     const response = await getGeminiReponse({ systemPrompt, userPrompt });
-    // const response = await getOpenAIReponse({ systemPrompt, userPrompt });
     return response;
   });
 }

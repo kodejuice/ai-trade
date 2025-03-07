@@ -2,6 +2,8 @@ import fs from "fs/promises";
 import path from "path";
 import { createClient } from "redis";
 
+import { LRUCache } from "./lru-cache.js";
+
 // IO
 export async function getCachedDataIO(key, fetchData) {
   const cacheDir = path.join(process.cwd(), "tmp");
@@ -47,23 +49,33 @@ export const getCachedResult = async (
   fetchDataFn,
   expirationSeconds = 780
 ) => {
+  const lruCache = new LRUCache(200);
+
   try {
+    // Check LRU cache first
+    const lruValue = lruCache.get(key);
+    if (lruValue !== -1) return lruValue;
+
     if (!redisClient) {
       redisClient = createClient({
         url: process.env.REDIS_URL,
         pingInterval: 1000,
       });
       await redisClient.connect();
-      // console.log("Redis client connected");
     }
 
     let value = await redisClient.get(key);
-    if (value !== null) return JSON.parse(value);
+    if (value !== null) {
+      const parsedValue = JSON.parse(value);
+      lruCache.put(key, parsedValue);
+      return parsedValue;
+    }
 
     value = await fetchDataFn();
     await redisClient.set(key, JSON.stringify(value), {
       EX: expirationSeconds,
     });
+    lruCache.put(key, value);
 
     return value;
   } catch (error) {
@@ -71,7 +83,6 @@ export const getCachedResult = async (
     return await fetchDataFn();
   }
 };
-
 export const invalidateCache = async (key) => {
   try {
     if (!redisClient) {

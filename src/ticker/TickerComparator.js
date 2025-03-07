@@ -5,39 +5,25 @@ import { yfinanceMapping } from "./tickers.js";
 
 export class TickerComparator {
   static async compare(ticker1, ticker2, tradeType) {
-    return getCachedResult(
-      `ai-trade-compare-${ticker1}-${ticker2}-${tradeType}`,
-      async () => {
-        // const data1 = await getTickerPreview(yfinanceMapping.mapSymbol(ticker1));
-        // const data2 = await getTickerPreview(yfinanceMapping.mapSymbol(ticker2));
-        const t1 = yfinanceMapping.mapSymbol(ticker1);
-        const t2 = yfinanceMapping.mapSymbol(ticker2);
-        const data1 = await getCachedResult(
-          `ai-trade-preview-${ticker1}`,
-          () => getTickerPreview(t1),
-          60 * 60 * 3 // 3 hours
-        );
-        const data2 = await getCachedResult(
-          `ai-trade-preview-${ticker2}`,
-          () => getTickerPreview(t2),
-          60 * 60 * 3
-        );
-
-        const comparisonResult = await LLMResponse({
-          systemPrompt: this.getSystemPrompt(tradeType),
-          userPrompt: this.getUserPrompt(
-            ticker1,
-            ticker2,
-            data1,
-            data2,
-            tradeType
-          ),
-        });
-
-        return this.parseComparisonResult(comparisonResult);
-      },
+    const t1 = yfinanceMapping.mapSymbol(ticker1);
+    const t2 = yfinanceMapping.mapSymbol(ticker2);
+    const data1 = await getCachedResult(
+      `ai-trade-preview-${ticker1}`,
+      () => getTickerPreview(t1),
       60 * 60 * 24 // 24 hours
     );
+    const data2 = await getCachedResult(
+      `ai-trade-preview-${ticker2}`,
+      () => getTickerPreview(t2),
+      60 * 60 * 24
+    );
+
+    const comparisonResult = await LLMResponse({
+      systemPrompt: this.getSystemPrompt(tradeType),
+      userPrompt: this.getUserPrompt(ticker1, ticker2, data1, data2, tradeType),
+    });
+
+    return this.parseComparisonResult(comparisonResult);
   }
 
   static getSystemPrompt(tradeType) {
