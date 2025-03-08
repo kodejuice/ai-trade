@@ -1,5 +1,5 @@
 import { getCachedResult } from "../helpers/cache.js";
-import { LLMResponse } from "../helpers/llm.js";
+import { LLMResponse } from "../helpers/llm/llm.js";
 import { getTickerPreview } from "./get-preview-ticker-data.js";
 import { yfinanceMapping } from "./tickers.js";
 

@@ -1,3 +1,5 @@
+import yahooFinance from "yahoo-finance2";
+
 import { formatDistanceToNow } from "date-fns";
 
 import {
@@ -7,6 +9,7 @@ import {
   getTechnicalIndicators,
 } from "./get-preview-ticker-data.js";
 import { formatCurrency, formatNumber } from "../helpers/util.js";
+import { getTopNews } from "../helpers/news-sentiment.js";
 
 const timeDistance = (date) =>
   formatDistanceToNow(new Date(date), { addSuffix: true });
@@ -53,7 +56,7 @@ export async function getFullTickerData(symbol, tradeType = "swing") {
           ? true /* forex quotes dont have volume */
           : x.volume > 0
       );
-      const latestIntraDayData = historicalIntradayData.slice(-5, -1); // [_, ..., X, X, X, X, _]
+      const latestIntraDayData = historicalIntradayData.slice(-3, -1); // [_, ..., X, X, _]
 
       // Append latest intraday data to historical daily data
       data["quotes"] = [
@@ -61,6 +64,11 @@ export async function getFullTickerData(symbol, tradeType = "swing") {
         ...latestIntraDayData,
         historicalDailyData.at(-1),
       ];
+
+      // add news
+      const searchResult = await yahooFinance.search(symbol);
+      const newsWithSentiment = await getTopNews(searchResult.news);
+      data["recent_news"] = newsWithSentiment;
     } else if (tradeType === "scalp") {
       const historicalIntraday = historicalData.historical5m;
       const historicalIntradayData = Array.from(

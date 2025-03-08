@@ -72,12 +72,15 @@ export async function waitFor(seconds) {
 }
 
 export function msToTime(ms) {
+  if (ms < 0) {
+    return '0:00';
+  }
   const hours = Math.floor(ms / 3600000);
   const minutes = Math.floor((ms % 3600000) / 60000);
   const seconds = ((ms % 60000) / 1000).toFixed(0);
   
   if (hours > 0) {
-    return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.padStart(2, '0')}`;
+    return `${hours}h:${minutes.toString().padStart(2, '0')}m:${seconds.padStart(2, '0')}s`;
   }
-  return `${minutes}:${seconds.padStart(2, '0')}`;
+  return `${minutes}m:${seconds.padStart(2, '0')}s`;
 }

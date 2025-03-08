@@ -2,14 +2,20 @@ import { JSDOM } from "jsdom";
 import fetch from "node-fetch";
 import { formatDistanceToNow } from "date-fns";
 
-import { LLMResponse } from "./llm.js";
+import { LLMResponse } from "./llm/llm.js";
 import { getCachedResult } from "./cache.js";
 
 async function getNewsSentiment(text) {
-  return LLMResponse({
-    systemPrompt: `Given the following text, classify the sentiment as positive, negative, or neutral. Dont include any additional text, just the single sentiment label.`,
-    userPrompt: text,
+  const sentiment = await LLMResponse({
+    systemPrompt: `You are a sentiment analysis model. You analyze news articles and determine the sentiment of the article.`,
+    userPrompt: `Given the following text, classify the sentiment as positive, negative, or neutral. Dont include any additional text, just the single sentiment label:
+${text}
+-----
+
+Return a single sentiment label: "Bullish" or "Bearish" or "Neutral". No additional text, just a single sentiment label.
+`,
   });
+  return sentiment.replaceAll("\n", "");
 }
 
 async function getNewsSummary(text) {

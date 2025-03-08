@@ -37,7 +37,8 @@ export const sortTickers = async (tradeType) => {
         const msElapsed = Date.now() - startTime;
         const msPerComparison = msElapsed / currentComparisonCount;
         const comparisonsLeft = comparisonCount - currentComparisonCount;
-        const timeRemaining = msToTime(msPerComparison * comparisonsLeft);
+        const _30mins = 1000 * 60 * 27;
+        const timeRemaining = msToTime((msPerComparison * comparisonsLeft) - _30mins);
 
         console.log(
           `\n${currentComparisonCount} comparisons in ${msToTime(msElapsed)}
