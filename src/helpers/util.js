@@ -36,6 +36,13 @@ export function formatPercentageValue(value) {
   return `${Number(value).toFixed(2)}%`;
 }
 
+export function extractAmountFromText(text) {
+  text = text.replace(/[^\d.]/g, '');
+  const regex = /\$?(\d+(?:\.\d+)?)/;
+  const match = text.match(regex);
+  return match ? parseFloat(match[1]) : null;
+}
+
 // Computes percentage change between latest and a lagged value.
 // Assumes data is sorted in descending order (latest first).
 export function computePriceChangePercentage(data, lag) {

@@ -144,7 +144,7 @@ export function getPriceMetrics({
   historicalDaily,
 }) {
   const currentPrice =
-    historical1m.quotes.length > 0 ? historical1m.quotes.at(-1).close : null;
+    historical5m.quotes.length > 0 ? historical5m.quotes.at(-1).close : null;
   const priceMetrics = {
     currentPrice: formatCurrency(currentPrice),
     priceChange5min: computePriceChangePercentage(historical5m.quotes, 1),
@@ -158,6 +158,9 @@ export function getPriceMetrics({
     priceChange7days: computePriceChangePercentage(historicalDaily.quotes, 7),
     priceChange30days: computePriceChangePercentage(historicalDaily.quotes, 30),
   };
+  if (!priceMetrics.currentPrice) {
+    console.log("No current price found for", symbol, " => ", currentPrice);
+  }
   return priceMetrics;
 }
 
@@ -240,12 +243,20 @@ export function getTechnicalIndicators({ historicalData }) {
     period: 5,
     values: historicalCloseData,
   });
+  const EMA9 = ema({
+    period: 9,
+    values: historicalCloseData,
+  });
   const EMA20 = ema({
     period: 20,
     values: historicalCloseData,
   });
   const EMA50 = ema({
     period: 50,
+    values: historicalCloseData,
+  });
+  const EMA200 = ema({
+    period: 200,
     values: historicalCloseData,
   });
   const EMA10hr = ema({
@@ -302,8 +313,10 @@ export function getTechnicalIndicators({ historicalData }) {
     MACD,
     ATR,
     EMA5,
+    EMA9,
     EMA20,
     EMA50,
+    EMA200,
     EMA10hr,
     BBANDS,
     STOCH,
