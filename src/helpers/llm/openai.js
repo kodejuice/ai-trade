@@ -21,7 +21,7 @@ export const getOpenAIReponse = async ({
     const completion = await client.chat.completions.create({
       model,
       messages: messages,
-      temperature: 0.3,
+      temperature: 0.8,
       // max_completion_tokens: 300,
       frequency_penalty: 0,
       presence_penalty: 0,

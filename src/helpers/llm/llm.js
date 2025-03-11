@@ -11,7 +11,6 @@ export async function LLMResponse({ systemPrompt, userPrompt }) {
   return getCachedResult(
     `${cacheKey}`,
     async () => {
-      // console.log(userPrompt.match(/TICKER_1: [a-zA-Z0-9.]+/g)[0]);
       const response = await getGeminiReponse({ systemPrompt, userPrompt });
       return response;
     },

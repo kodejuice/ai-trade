@@ -9,10 +9,10 @@ const client = new OpenAI({
 });
 
 const groqModels = [
-  "deepseek-r1-distill-llama-70b",
   "qwen-qwq-32b",
   "deepseek-r1-distill-qwen-32b",
   "qwen-2.5-32b",
+  "deepseek-r1-distill-llama-70b",
   "llama-3.2-90b-vision-preview",
 ];
 
@@ -38,6 +38,7 @@ export const getGroqResponse = async ({ systemPrompt, userPrompt }) => {
         messages: messages,
         temperature: 0.6,
         top_p: 0.95,
+        max_tokens: 10000,
       });
       lastModelUsed = model;
       return completion.choices[0].message.content;
@@ -48,5 +49,9 @@ export const getGroqResponse = async ({ systemPrompt, userPrompt }) => {
 
   lastModelUsed = null;
   console.log("\nGroq models failed to generate response, using Gemini");
-  return getGeminiReponse({ systemPrompt, userPrompt });
+  return getGeminiReponse({
+    systemPrompt,
+    userPrompt,
+    model: "gemini-2.0-flash-thinking-exp-01-21",
+  });
 };
