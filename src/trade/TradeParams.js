@@ -1,18 +1,37 @@
+import * as fs from "node:fs/promises";
+
 import { getFullTickerData } from "../ticker/get-full-ticker-data.js";
 import { yfinanceMapping } from "../ticker/tickers.js";
 import { getGeminiReponse } from "../helpers/llm/gemini.js";
 import { getGroqResponse } from "../helpers/llm/groq.js";
 import { metaTradeAPI } from "./metaTradeApi.js";
 import { extractAmountFromText, formatCurrency } from "../helpers/util.js";
-import * as fs from 'node:fs/promises';
 
 const NoTradeObject = { no_trade: true };
 
 export class TradeParams {
   static async getTrade(ticker, tradeType = "scalp") {
     try {
-      const params = await this.getTradeParams(ticker, tradeType);
-      return params || NoTradeObject;
+      const params =
+        (await this.getTradeParams(ticker, tradeType)) || NoTradeObject;
+
+      // update stop-loss to be 800 points distance from current price
+      if (params.stop_loss) {
+        params.stop_loss = extractAmountFromText(`${params.stop_loss}`);
+        params.take_profit = extractAmountFromText(`${params.take_profit}`);
+
+        const { bid, ask } = await metaTradeAPI.getPrice(symbol);
+        if (params.order_type == "buy") {
+          const minStopLoss = ask - 0.08;
+          params.adjusted_stop_loss = Math.min(params.stop_loss, minStopLoss);
+        } else if (params.order_type == "sell") {
+          const minStopLoss = bid + 0.08;
+          params.adjusted_stop_loss = Math.max(params.stop_loss, minStopLoss);
+        }
+        params.price = { bid, ask };
+      }
+
+      return params;
     } catch (error) {
       return NoTradeObject;
     }
@@ -23,7 +42,12 @@ export class TradeParams {
     const systemPrompt = this.getSystemPrompt(tradeType);
 
     let userPrompt = await this.getPrompt(symbol, tradeType);
-    const response1 = await getGroqResponse({ systemPrompt, userPrompt });
+    // const response1 = await getGroqResponse({ systemPrompt, userPrompt });
+    const response1 = await getGeminiReponse({
+      systemPrompt,
+      userPrompt,
+      model: "gemini-2.0-flash-thinking-exp-01-21",
+    });
     const params1 = await this.extractTradeParamsFromResponse(response1);
 
     if (!params1 || params1.no_trade == true) {
@@ -31,7 +55,12 @@ export class TradeParams {
     }
 
     userPrompt = await this.getPrompt(symbol, tradeType);
-    const response2 = await getGroqResponse({ systemPrompt, userPrompt });
+    // const response2 = await getGroqResponse({ systemPrompt, userPrompt });
+    const response2 = await getGeminiReponse({
+      systemPrompt,
+      userPrompt,
+      model: "gemini-2.0-flash-thinking-exp-01-21",
+    });
     const params2 = await this.extractTradeParamsFromResponse(response2);
 
     if (
@@ -46,7 +75,7 @@ export class TradeParams {
       symbol,
       tradeType,
       userPrompt,
-      response: response1,
+      response: response2,
     });
 
     // params1.take_profit and params2.take_profit must be within 1% of each other
@@ -88,7 +117,7 @@ export class TradeParams {
   }
 
   static getSystemPrompt(tradeType) {
-    return `You are a professional ${tradeType} trader. You analyze ticker data and make highly accurate trading decisions. Based on the given ticker data, provide detailed analysis and recommend whether to BUY or SELL.`;
+    return `You are a professional ${tradeType} trader. You analyze ticker data and make highly accurate trading decisions. Based on the given ticker data, provide detailed analysis and recommend whether to BUY or SELL or Avoid trading for now.`;
   }
 
   static scalpTradePrompt(tickerData) {
@@ -103,8 +132,8 @@ Do proper analysis before making a trading decision
 
 ${this.getStrategyPrompt()}
 
-Current Bid Price: ${tickerData.latestPrice?.bid}
-Current Ask Price: ${tickerData.latestPrice?.ask}
+Current Buy Price: ${tickerData.latestPrice?.ask}
+Current Sell Price: ${tickerData.latestPrice?.bid}
 
 Give response in the following format, the JSON object within the brackets should be a valid JSON object:
 
@@ -117,6 +146,9 @@ Give response in the following format, the JSON object within the brackets shoul
    "take_profit": ...,
    "stop_loss": ...
 })))
+
+The stop loss must be 800 points below the buy price if we are buying, and 800 points above the sell price if we are selling.
+(1 point = 0.0001 of the price)
 
 Make sure it is wrapped with (((( )))
 
@@ -136,8 +168,8 @@ Do proper analysis before making a trading decision
 
 ${this.getStrategyPrompt()}
 
-Current Bid Price: ${tickerData.latestPrice?.bid}
-Current Ask Price: ${tickerData.latestPrice?.ask}
+Current Buy Price: ${tickerData.latestPrice?.ask}
+Current Sell Price: ${tickerData.latestPrice?.bid}
 
 Give response in the following format, the JSON object within the brackets should be a valid JSON object:
 
@@ -150,6 +182,9 @@ Give response in the following format, the JSON object within the brackets shoul
    "take_profit": ...,
    "stop_loss": ...
 })))
+
+The stop loss must be 800 points below the buy price if we are buying, and 800 points above the sell price if we are selling.
+(1 point = 0.0001 of the price)
 
 Make sure it is wrapped with (((( )))
 
@@ -167,8 +202,6 @@ Strategy to use:
   Breakout Trading : Identify key resistance/support levels and enter when price breaks out.
   Pullback Trading : Enter trades on minor retracements within the trend.
   Momentum Trading : Buy strong-moving assets with high volume and volatility.
-
-Considerations: Use trailing stops to secure gains as the trend continues ({..., trailing_stop_loss: ...}).
 
 2. If its a Ranging Market (Sideways or Consolidating)
 A ranging market moves within a defined horizontal price range, showing no clear trend.
@@ -207,7 +240,7 @@ Strategy to use:
 
 7. Choppy Markets:
 Avoid trading in choppy markets.
-Recognize that choppy markets are difficult to trade profitably with most strategies. The best strategy may be to abstain from trading and wait for clearer market conditions.
+Recognize that choppy markets are difficult to trade profitably with most strategies. The best strategy is to abstain from trading and wait for clearer market conditions.
 Specific Technique: Market Neutral approach - actively not taking positions or only taking very low-risk, short-term positions. Focus on observation and analysis rather than execution.
 
 ------
@@ -287,8 +320,20 @@ prompt: ${userPrompt},
 response: ${response}`;
 
     await fs.writeFile(
-      `${logPath}/${symbol}-${tradeType}-${Date.now()}.json`,
-      logData,
+      `${logPath}/${symbol}-${tradeType}-${Date.now()}.txt`,
+      logData
     );
+
+    // loop over files in log directory and delete old files
+    // read time from filename
+    const files = await fs.readdir(logPath);
+    // Keep only files from the last 10 hours
+    const _10hrs = Date.now() - 10 * 60 * 60 * 1000;
+    for (const file of files) {
+      const timestamp = parseInt(file.split("-").pop().replace(".txt", ""));
+      if (timestamp < _10hrs) {
+        await fs.unlink(`${logPath}/${file}`);
+      }
+    }
   }
 }
