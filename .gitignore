@@ -1,6 +1,8 @@
 node_modules/
 data.txt
 tmp/
+.metaapi
+repomix-output.txt
 
 # Python
 __pycache__/
