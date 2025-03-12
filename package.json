@@ -17,16 +17,17 @@
   "license": "MIT",
   "dependencies": {
     "@google/generative-ai": "0.22.0",
-    "date-fns": "^4.1.0",
+    "date-fns": "4.1.0",
     "dotenv": "16.4.7",
-    "jsdom": "^26.0.0",
+    "jsdom": "26.0.0",
+    "metaapi.cloud-sdk": "29.0.2",
     "node-fetch": "3.3.2",
     "openai": "4.83.0",
-    "redis": "^4.7.0",
+    "redis": "4.7.0",
     "technicalindicators": "3.1.0",
     "yahoo-finance2": "2.13.3"
   },
   "engines": {
-    "node": "21.x"
+    "node": ">=21.x"
   }
 }
