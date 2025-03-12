@@ -64,7 +64,6 @@ export async function getFullTickerData(symbol, tradeType = "swing") {
         ...latestIntraDayData,
         historicalDailyData.at(-1),
       ];
-
     } else if (tradeType === "scalp") {
       const historicalIntraday = historicalData.historical5m;
       const historicalIntradayData = Array.from(
@@ -79,7 +78,10 @@ export async function getFullTickerData(symbol, tradeType = "swing") {
 
     // add news
     const searchResult = await yahooFinance.search(symbol);
-    const newsWithSentiment = await getTopNews(searchResult.news);
+    const newsWithSentiment = await getTopNews(
+      searchResult.news,
+      tradeType == "scalp"
+    );
     data["recent_news"] = newsWithSentiment;
 
     var technicals = getTechnicalIndicators({
@@ -105,7 +107,7 @@ export async function getFullTickerData(symbol, tradeType = "swing") {
           // EMA5: showIndicator(technicals.EMA5[index], tradeType, "scalp"),
           EMA9: showIndicator(technicals.EMA9[index], tradeType, "scalp"),
           EMA20: showIndicator(technicals.EMA20[index], tradeType, "scalp"),
-          
+
           // swing
           MACD: showIndicator(technicals.MACD[index], tradeType, "swing"),
           EMA50: showIndicator(technicals.EMA50[index], tradeType, "swing"),
@@ -113,7 +115,7 @@ export async function getFullTickerData(symbol, tradeType = "swing") {
           OBV: showIndicator(technicals.OBV[index], tradeType, "swing"),
 
           // common
-          STOCH: showIndicator(technicals.STOCH[index], tradeType, "scalp"),
+          STOCH: technicals.STOCH[index],
           BBANDS: technicals.BBANDS[index],
           RSI: technicals.RSI[index],
           ATR: technicals.ATR[index],
@@ -123,11 +125,11 @@ export async function getFullTickerData(symbol, tradeType = "swing") {
     });
 
     data["quotes"] = [
-      ...Q.slice(-42, -35),    // show data from 42 to 35 points ago
+      ...Q.slice(-42, -35), // show data from 42 to 35 points ago
       // ...Q.slice(-35, -28), // hidden: data from 35 to 28 points ago
-      ...Q.slice(-28, -21),    // show data from 28 to 21 points ago
+      ...Q.slice(-28, -21), // show data from 28 to 21 points ago
       // ...Q.slice(-21, -14), // hidden: data from 21 to 14 points ago
-      ...Q.slice(-14),         // show most recent 14 points of data
+      ...Q.slice(-14), // show most recent 14 points of data
     ];
     // console.log("len", data["quotes"].length); // => 28
 

@@ -46,7 +46,18 @@ async function getNewsSummaryAndSentimentLabel(url) {
   );
 }
 
-export async function getTopNews(news) {
+export async function getTopNews(news, fetchRecent = false) {
+  news = (news || []).filter((item) => {
+    const date = new Date(item.providerPublishTime);
+    const now = new Date();
+    const diff = now - date;
+    if (fetchRecent) {
+      return diff < 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+    } else {
+      return diff < 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
+    }
+  });
+
   if (!news || news.length === 0) {
     return [];
   }
