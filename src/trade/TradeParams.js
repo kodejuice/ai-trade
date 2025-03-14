@@ -77,15 +77,15 @@ export class TradeParams {
       platform: "groq",
     });
     const params = await this.extractTradeParamsFromResponse(response);
-
+    
     this.logTrade({
       symbol,
       tradeType,
       userPrompt,
       response,
-      params,
+      model,
     });
-
+    
     if (
       !params ||
       params.no_trade == true ||
@@ -94,7 +94,7 @@ export class TradeParams {
     ) {
       return null;
     }
-
+    
     params.tradeType = tradeType;
     params.symbol = symbol;
     params.model = getGroqModel() || getGeminiModel() || "gpt";
@@ -152,7 +152,7 @@ Return valid JSON.`;
     }
   }
 
-  static async logTrade({ symbol, tradeType, userPrompt, response, params }) {
+  static async logTrade({ symbol, tradeType, userPrompt, response, model }) {
     // Store prompt and response for analysis
     const logPath = "./tmp/trade-logs";
 
@@ -162,7 +162,7 @@ Return valid JSON.`;
     const logData = `timestamp: ${new Date().toISOString()},
 symbol: ${symbol}
 tradeType: ${tradeType}
-model: ${params.model}
+model: ${model}
 
 prompt: ${userPrompt}
 
