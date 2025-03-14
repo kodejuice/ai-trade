@@ -19,7 +19,7 @@ export const sortTickers = async (tradeType) => {
     await getCachedResult(
       `ai-trade-preview-${t}`,
       () => getTickerPreview(yfinanceMapping.mapSymbol(t)),
-      60 * 60 * 24
+      60 * 60 * 24, // 1 day
     );
   }
 
