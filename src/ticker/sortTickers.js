@@ -2,7 +2,7 @@ import { mergeSort } from "../helpers/merge-sort.js";
 import { msToTime, waitFor } from "../helpers/util.js";
 import { getAllTickers, yfinanceMapping } from "./tickers.js";
 
-import { TickerComparator } from "./TickerComparator.js";
+import { TickerComparator } from "./TickerComparator-algorithm.js";
 import { getCachedResult, setCachedResult } from "../helpers/cache.js";
 import { getTickerPreview } from "./get-preview-ticker-data.js";
 import { TICKERS_CACHE_DURATION } from "./get-top-tickers.js";
@@ -80,7 +80,7 @@ const logSortingStart = async (tickerCount, tradeType, comparisonCount) => {
 };
 
 const sortAndCacheTickers = async (tradeType) => {
-  const sortedTickers = await sortTickers("scalp");
+  const sortedTickers = await sortTickers(tradeType);
   console.log(`${tradeType} tickers => ${JSON.stringify(sortedTickers)}\n`);
 
   // cache to Redis
