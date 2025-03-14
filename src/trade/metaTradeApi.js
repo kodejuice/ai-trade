@@ -65,7 +65,7 @@ class MetaTradeApi {
    * @param {string} param.model - Model used for trade
    */
   async openTrade(param) {
-    if (param?.no_trade || !param?.take_profit) {
+    if (param?.no_trade || !param?.take_profit || !param?.stop_loss) {
       return;
     }
 
