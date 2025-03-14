@@ -178,12 +178,12 @@ response: ${response}`;
     // loop over files in log directory and delete old files
     // read time from filename
     const files = await fs.readdir(logPath);
-    // Keep only files from the last 10 hours
-    const _3hrs = Date.now() - 3 * 60 * 60 * 1000;
+    // Keep only files from the last 30 minutes
+    const _30mins = Date.now() - 30 * 60 * 1000;
     for (const file of files) {
       const timestamp = parseInt(file.split("-").pop().replace(".txt", ""));
-      if (timestamp < _3hrs) {
-        await fs.unlink(`${logPath}/${file}`);
+      if (timestamp < _30mins) {
+      await fs.unlink(`${logPath}/${file}`);
       }
     }
   }
