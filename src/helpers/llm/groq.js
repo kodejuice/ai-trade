@@ -2,12 +2,6 @@ import OpenAI from "openai";
 
 import { getGeminiReponse } from "./gemini.js";
 
-const client = new OpenAI({
-  apiKey: process.env.GROQ_API_KEY,
-  baseURL: "https://api.groq.com/openai/v1",
-  maxRetries: 2,
-});
-
 const groqModels = [
   "deepseek-r1-distill-llama-70b",
   "llama-3.2-90b-vision-preview",
@@ -26,6 +20,12 @@ export function getGroqModel() {
  * Get chat response from Groq API
  */
 export const getGroqResponse = async ({ systemPrompt, userPrompt }) => {
+  const client = new OpenAI({
+    apiKey: process.env.GROQ_API_KEY,
+    baseURL: "https://api.groq.com/openai/v1",
+    maxRetries: 2,
+  });
+
   const messages = [
     { role: "system", content: systemPrompt },
     { role: "user", content: userPrompt },

@@ -4,7 +4,8 @@ import crypto from "crypto";
 
 import { getCachedResult } from "../cache.js";
 import { getGeminiReponse } from "./gemini.js";
-
+import { getGroqResponse } from "./groq.js";
+import { getOpenAIReponse } from "./openai.js";
 
 export async function LLMResponse({ systemPrompt, userPrompt }) {
   const cacheKey = crypto.createHash("sha256").update(userPrompt).digest("hex");
@@ -16,4 +17,27 @@ export async function LLMResponse({ systemPrompt, userPrompt }) {
     },
     60 * 60 * 24 // 1 day
   );
+}
+
+export async function getLLMResponse({
+  systemPrompt,
+  userPrompt,
+  platform,
+  model = undefined,
+}) {
+  if (platform === "gemini") {
+    return getGeminiReponse({
+      systemPrompt,
+      userPrompt,
+      model: model || "gemini-2.0-flash-thinking-exp-01-21",
+    });
+  }
+  if (platform === "groq") {
+    return getGroqResponse({ systemPrompt, userPrompt });
+  }
+  if (platform === "openai") {
+    return getOpenAIReponse({ systemPrompt, userPrompt, model });
+  }
+
+  return LLMResponse({ systemPrompt, userPrompt });
 }
