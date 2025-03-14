@@ -359,10 +359,10 @@ export function getTechnicalIndicators({ historicalData }) {
 
 // ----------------------
 // Fetch and Aggregate Ticker Data (Preview)
+// We'll use this for sorting tickers
 // ----------------------
 export async function getTickerPreview(symbol) {
   console.log("getTickerPreview", symbol);
-  // process.exit(0);
 
   try {
     const { quoteSummary, fundamentals } = await getFundamentals(symbol);
@@ -438,6 +438,13 @@ export async function getTickerPreview(symbol) {
           CCI: technicals.CCI.at(-1),
           OBV: technicals.OBV.at(-1),
           MFI: technicals.MFI.at(-1),
+          EMA5: technicals.EMA5.at(-1),
+          EMA9: technicals.EMA9.at(-1),
+          EMA20: technicals.EMA20.at(-1),
+          EMA50: technicals.EMA50.at(-1),
+          EMA200: technicals.EMA200.at(-1),
+          SMA50: technicals.SMA50.at(-1),
+          SMA200: technicals.SMA200.at(-1),
         };
 
     const technicalIndicators = {

@@ -89,11 +89,7 @@ export async function getFullTickerData(symbol, tradeType = "swing") {
     });
 
     const Q = data["quotes"].map((quote, index) => {
-      // const isLastQuote = index === data["quotes"].length - 1;
       return {
-        // date: isLastQuote ? undefined : new Date(quote.date).toLocaleString(),
-        // timeAgo: isLastQuote ? undefined : timeDistance(quote.date),
-        // time: isLastQuote ? "latest" : undefined,
         date: new Date(quote.date).toLocaleString(),
         timeAgo: timeDistance(quote.date),
         open: formatCurrency(quote.open),
