@@ -63,6 +63,8 @@ class MetaTradeApi {
    * @param {number} param.stopsLevel - Stops level of the symbol
    * @param {boolean} param.no_trade - Flag indicating whether to execute the trade
    * @param {string} param.model - Model used for trade
+   * @param {number} param.spread - Spread of the symbol
+   * @param {number} param.minStopsLevelInPips - Minimum stops level in pips
    */
   async openTrade(param) {
     if (param?.no_trade || !param?.take_profit || !param?.stop_loss) {
@@ -88,8 +90,9 @@ class MetaTradeApi {
       console.log("LLM Model:", model);
       console.log("Free margin:", accountInfo.freeMargin);
       console.log("1% of free margin:", accountInfo.freeMargin / 100);
-      console.log(`Take profit: ${param.take_profit}`);
-      console.log(`Stop loss: ${param.stop_loss}`);
+      console.log(`> Take profit: ${param.take_profit}`);
+      console.log(`> Stop loss: ${param.stop_loss}`);
+      console.log(`> [Spread: ${param.spread} || Stops level: ${param.minStopsLevelInPips}]`);
 
       let tradeResp;
       if (order_type == "buy") {
