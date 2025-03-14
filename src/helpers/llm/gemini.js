@@ -7,8 +7,8 @@ let geminiModels = [
   "gemini-2.0-flash-lite-preview-02-05",
   "gemini-2.0-flash",
   "gemini-2.0-flash-exp",
-  "gemini-1.5-flash",
-  "gemini-1.5-flash-8b",
+  // "gemini-1.5-flash",
+  // "gemini-1.5-flash-8b",
   "gemini-2.0-flash-thinking-exp-01-21",
 ];
 const M = geminiModels.slice();
@@ -64,7 +64,7 @@ export const getGeminiReponse = async ({
       }
     }
 
-    console.log("Rate limit exceeded for Gemini API.");
+    // console.log("Rate limit exceeded for Gemini API.");
     lastModelUsed = null;
     geminiModels = M; // Reset the models array
     return getOpenAIReponse({ systemPrompt, userPrompt });

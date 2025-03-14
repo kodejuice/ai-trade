@@ -5,15 +5,15 @@ import { getGeminiReponse } from "./gemini.js";
 const client = new OpenAI({
   apiKey: process.env.GROQ_API_KEY,
   baseURL: "https://api.groq.com/openai/v1",
-  maxRetries: 1,
+  maxRetries: 2,
 });
 
 const groqModels = [
-  "qwen-qwq-32b",
-  "deepseek-r1-distill-qwen-32b",
-  "qwen-2.5-32b",
   "deepseek-r1-distill-llama-70b",
   "llama-3.2-90b-vision-preview",
+  "deepseek-r1-distill-qwen-32b",
+  // "qwen-2.5-32b",
+  // "qwen-qwq-32b",
 ];
 
 let lastModelUsed = null;
@@ -48,7 +48,7 @@ export const getGroqResponse = async ({ systemPrompt, userPrompt }) => {
   }
 
   lastModelUsed = null;
-  console.log("\nGroq models failed to generate response, using Gemini");
+  // console.log("\nGroq models failed to generate response, using Gemini");
   return getGeminiReponse({
     systemPrompt,
     userPrompt,
