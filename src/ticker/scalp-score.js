@@ -73,7 +73,7 @@ function parseStockData(data) {
   // Parse price metrics
   if (data.priceMetrics) {
     parsed.price.current = parseFloat(
-      data.priceMetrics.currentPrice.replace("$", "")
+      data.priceMetrics?.currentPrice?.replace("$", "")
     );
 
     const priceChanges = {
@@ -92,7 +92,7 @@ function parseStockData(data) {
     // Parse percentage changes
     parsed.price.changes = {};
     for (const [timeframe, change] of Object.entries(priceChanges)) {
-      const match = change.match(/([-\+]?\d+\.\d+)%/);
+      const match = (change || "").match(/([-\+]?\d+\.\d+)%/);
       parsed.price.changes[timeframe] = match ? parseFloat(match[1]) : 0;
     }
   }
