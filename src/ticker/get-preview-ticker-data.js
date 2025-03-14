@@ -23,6 +23,8 @@ import {
   mfi,
 } from "technicalindicators";
 import { getTopNews } from "../helpers/news-sentiment.js";
+// import { calculateScalpScore } from "./scalp-score.js";
+// import { calculateSwingScore } from "./swing-score.js";
 
 yahooFinance.suppressNotices(["yahooSurvey"]);
 
@@ -487,4 +489,15 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     .then((data) => console.log(JSON.stringify(data, null, 1)))
     .catch((error) => console.error("Error fetching ticker data:", error))
     .finally(() => process.exit(0));
+  
+  // (async () => {
+  //   const t1 = "msft", t2 = "btc-usd";
+  //   const data1 = await getTickerPreview(t1);
+  //   const data2 = await getTickerPreview(t2);
+
+  //   console.log(`${t1} scalp`, calculateScalpScore(data1));
+  //   console.log(`${t2} scalp`, calculateScalpScore(data2));
+  //   console.log(`${t1} swing`, calculateSwingScore(data1));
+  //   console.log(`${t2} swing`, calculateSwingScore(data2));
+  // })();
 }
