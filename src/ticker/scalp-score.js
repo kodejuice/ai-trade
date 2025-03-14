@@ -100,13 +100,13 @@ function parseStockData(data) {
   // Parse volume metrics
   if (data.volumeMetrics) {
     parsed.volume.current = parseInt(
-      data.volumeMetrics["current volume (15 min)"].replace(/,/g, "")
+      data.volumeMetrics["current volume (15 min)"]?.replace(/,/g, "") || 0
     );
     parsed.volume.averageDaily = parseInt(
-      data.volumeMetrics["average volume (10 days)"].replace(/,/g, "")
+      data.volumeMetrics["average volume (10 days)"]?.replace(/,/g, "") || 0
     );
     parsed.volume.regularMarket = parseInt(
-      data.volumeMetrics["regular market volume"].replace(/,/g, "")
+      data.volumeMetrics["regular market volume"]?.replace(/,/g, "") || 0
     );
   }
 
