@@ -51,7 +51,6 @@ export const getCachedResult = async (
   fetchDataFn,
   expirationSeconds = 780
 ) => {
-
   try {
     // Check LRU cache first
     const lruValue = lruCache.get(key);
@@ -84,6 +83,26 @@ export const getCachedResult = async (
     return await fetchDataFn();
   }
 };
+
+export const setCachedResult = async (key, value, expirationSeconds = 780) => {
+  try {
+    if (!redisClient) {
+      redisClient = createClient({
+        url: process.env.REDIS_URL,
+        pingInterval: 1000,
+      });
+      await redisClient.connect();
+    }
+
+    await redisClient.set(key, JSON.stringify(value), {
+      EX: expirationSeconds,
+    });
+    lruCache.put(key, value);
+  } catch (error) {
+    console.error("Redis set cache error:", error);
+  }
+};
+
 export const invalidateCache = async (key) => {
   try {
     if (!redisClient) {

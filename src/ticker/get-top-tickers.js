@@ -4,20 +4,20 @@ import { getFundamentals } from "./get-preview-ticker-data.js";
 import { sortTickers } from "./sortTickers.js";
 import { yfinanceMapping } from "./tickers.js";
 
-const CACHE_DURATION = 60 * 60 * 24 * 7; // 7 days
+export const TICKERS_CACHE_DURATION = 60 * 60 * 24 * 7; // 7 days
 
 export const getTopTickers = async (tradeType = "scalp", n = 7, log = true) => {
   const sortedTickers = await getCachedResult(
     `ai-trade-sorted-tickers-${tradeType}`,
     () => sortTickers(tradeType),
-    CACHE_DURATION
+    TICKERS_CACHE_DURATION
   );
 
   const tradableTickers = await filterTradableTickers(sortedTickers, n);
 
   if (log) {
     console.log(
-      `[[(${tradeType}): ${tradableTickers.length} tickers open for trading]] => [${tradableTickers}]`
+      `[[(${tradeType}): ${tradableTickers.length} tickers open for trading]] => [${tradableTickers}]\n`
     );
   }
 

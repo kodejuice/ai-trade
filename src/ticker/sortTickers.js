@@ -3,8 +3,9 @@ import { msToTime, waitFor } from "../helpers/util.js";
 import { getAllTickers, yfinanceMapping } from "./tickers.js";
 
 import { TickerComparator } from "./TickerComparator.js";
-import { getCachedResult } from "../helpers/cache.js";
+import { getCachedResult, setCachedResult } from "../helpers/cache.js";
 import { getTickerPreview } from "./get-preview-ticker-data.js";
+import { TICKERS_CACHE_DURATION } from "./get-top-tickers.js";
 
 const LOG_INTERVAL = 1000 * 60 * 5; // 5 minutes
 
@@ -38,7 +39,9 @@ export const sortTickers = async (tradeType) => {
         const msPerComparison = msElapsed / currentComparisonCount;
         const comparisonsLeft = comparisonCount - currentComparisonCount;
         const _30mins = 1000 * 60 * 27;
-        const timeRemaining = msToTime((msPerComparison * comparisonsLeft) - _30mins);
+        const timeRemaining = msToTime(
+          msPerComparison * comparisonsLeft - _30mins
+        );
 
         console.log(
           `\n${currentComparisonCount} comparisons in ${msToTime(msElapsed)}
@@ -75,3 +78,22 @@ const logSortingStart = async (tickerCount, tradeType, comparisonCount) => {
     `\n[sorting ${tickerCount} tickers for <${tradeType}> trading]\n${comparisonCount} comparisons expected\n`
   );
 };
+
+const sortAndCacheTickers = async (tradeType) => {
+  const sortedTickers = await sortTickers("scalp");
+  console.log(`${tradeType} tickers => ${JSON.stringify(sortedTickers)}\n`);
+
+  // cache to Redis
+  return setCachedResult(
+    `ai-trade-sorted-tickers-${tradeType}`,
+    sortedTickers,
+    TICKERS_CACHE_DURATION
+  );
+};
+
+if (import.meta.url === `file://${process.argv[1]}`) {
+  (async () => {
+    await sortAndCacheTickers("scalp");
+    await sortAndCacheTickers("swing");
+  })();
+}
