@@ -31,10 +31,14 @@ export class TradeParams {
       params.take_profit = extractAmountFromText(`${params.take_profit}`);
 
       const { stopsLevel, digits } = await metaTradeAPI.getSpec(symbol);
-      const minStopsLevelInPips = (stopsLevel + 3) / Math.pow(10, digits);
-
+      const minStopsLevelInPips = (stopsLevel) / Math.pow(10, digits);
+      
       const { bid, ask } = await metaTradeAPI.getPrice(symbol);
       const spread = Math.abs(ask - bid);
+
+      params.spread = spread;
+      params.minStopsLevelInPips = minStopsLevelInPips;
+
       if (params.order_type == "buy") {
         const minStopLoss = bid - (minStopsLevelInPips + spread);
         const minTakeProfit = bid + (minStopsLevelInPips + spread);
@@ -63,7 +67,10 @@ export class TradeParams {
         }
       }
       params.price = { bid, ask };
-      params.stopsLevel = stopsLevel;
+
+      params.stopsLevel = Math.round(stopsLevel * 100) / 100;
+      params.take_profit = Math.floor(params.take_profit * 100) / 100;
+      params.stop_loss = Math.floor(params.stop_loss * 100) / 100;
     }
   }
 
@@ -74,10 +81,11 @@ export class TradeParams {
     let response = await getLLMResponse({
       systemPrompt,
       userPrompt,
-      platform: "groq",
+      platform: "gemini",
     });
+    const model = getGroqModel() || getGeminiModel() || "gpt";
     const params = await this.extractTradeParamsFromResponse(response);
-    
+
     this.logTrade({
       symbol,
       tradeType,
@@ -85,7 +93,7 @@ export class TradeParams {
       response,
       model,
     });
-    
+
     if (
       !params ||
       params.no_trade == true ||
@@ -94,10 +102,10 @@ export class TradeParams {
     ) {
       return null;
     }
-    
+
     params.tradeType = tradeType;
     params.symbol = symbol;
-    params.model = getGroqModel() || getGeminiModel() || "gpt";
+    params.model = model;
 
     return params;
   }
