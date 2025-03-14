@@ -158,9 +158,9 @@ export function getPriceMetrics({
     priceChange7days: computePriceChangePercentage(historicalDaily.quotes, 7),
     priceChange30days: computePriceChangePercentage(historicalDaily.quotes, 30),
   };
-  if (!priceMetrics.currentPrice) {
-    console.log("No current price found for", symbol, " => ", currentPrice);
-  }
+  // if (!priceMetrics.currentPrice) {
+  //   console.log("No current price found for", symbol, " => ", currentPrice);
+  // }
   return priceMetrics;
 }
 
@@ -259,6 +259,14 @@ export function getTechnicalIndicators({ historicalData }) {
     period: 200,
     values: historicalCloseData,
   });
+  const SMA50 = sma({
+    period: 50,
+    values: historicalCloseData,
+  });
+  const SMA200 = ema({
+    period: 200,
+    values: historicalCloseData,
+  });
   const EMA10hr = ema({
     period: 40, // assuming 15min interval, 15*40 = 600min = 10hrs
     values: historicalCloseData,
@@ -317,6 +325,8 @@ export function getTechnicalIndicators({ historicalData }) {
     EMA20,
     EMA50,
     EMA200,
+    SMA50,
+    SMA200,
     EMA10hr,
     BBANDS,
     STOCH,

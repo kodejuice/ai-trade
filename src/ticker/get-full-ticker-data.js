@@ -106,15 +106,17 @@ export async function getFullTickerData(symbol, tradeType = "swing") {
           VWAP: showIndicator(technicals.VWAP[index], tradeType, "scalp"),
           // EMA5: showIndicator(technicals.EMA5[index], tradeType, "scalp"),
           EMA9: showIndicator(technicals.EMA9[index], tradeType, "scalp"),
-          EMA20: showIndicator(technicals.EMA20[index], tradeType, "scalp"),
 
           // swing
+          OBV: showIndicator(technicals.OBV[index], tradeType, "swing"),
           MACD: showIndicator(technicals.MACD[index], tradeType, "swing"),
           EMA50: showIndicator(technicals.EMA50[index], tradeType, "swing"),
           EMA200: showIndicator(technicals.EMA200[index], tradeType, "swing"),
-          OBV: showIndicator(technicals.OBV[index], tradeType, "swing"),
+          SMA50: showIndicator(technicals.SMA50[index], tradeType, "swing"),
+          SMA200: showIndicator(technicals.SMA200[index], tradeType, "swing"),
 
           // common
+          EMA20: technicals.EMA20[index],
           STOCH: technicals.STOCH[index],
           BBANDS: technicals.BBANDS[index],
           RSI: technicals.RSI[index],
