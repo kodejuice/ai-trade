@@ -14,7 +14,7 @@ export const sortTickers = async (tradeType) => {
   const comparisonCount = ~~(tickers.length * Math.log2(tickers.length));
 
   // cache preview data for each ticker
-  waitFor(3).then(() => console.log("\nPre-caching ticker preview data..."));
+  waitFor(3).then(() => console.log(`\nPre-caching ${tickers.length} ticker preview data...`));
   for (const t of tickers) {
     await getCachedResult(
       `ai-trade-preview-${t}`,
