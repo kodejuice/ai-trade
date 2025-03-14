@@ -73,7 +73,7 @@ const handleComparisonError = (err, ticker1, ticker2) => {
 };
 
 const logSortingStart = async (tickerCount, tradeType, comparisonCount) => {
-  await waitFor(5);
+  // await waitFor(5);
   console.log(
     `\n[sorting ${tickerCount} tickers for <${tradeType}> trading]\n${comparisonCount} comparisons expected\n`
   );
