@@ -78,29 +78,20 @@ export class TradeParams {
     });
     const params = await this.extractTradeParamsFromResponse(response);
 
-    // userPrompt = await TradePromptGenerator.getPrompt(symbol, tradeType);
-    // response = await getLLMResponse({
-    //   systemPrompt,
-    //   userPrompt,
-    //   platform: "groq",
-    // });
-    // const params2 = await this.extractTradeParamsFromResponse(response);
-    // if (
-    //   !params2 ||
-    //   params2.no_trade == true ||
-    //   params1.order_type !== params2.order_type
-    // ) {
-    //   return null;
-    // }
-
     this.logTrade({
       symbol,
       tradeType,
       userPrompt,
       response,
+      params,
     });
 
-    if (!params || params.no_trade == true) {
+    if (
+      !params ||
+      params.no_trade == true ||
+      !["buy", "sell"].includes(params.order_type) ||
+      params.confidence_score < 6.5
+    ) {
       return null;
     }
 
@@ -161,7 +152,7 @@ Return valid JSON.`;
     }
   }
 
-  static async logTrade({ symbol, tradeType, userPrompt, response }) {
+  static async logTrade({ symbol, tradeType, userPrompt, response, params }) {
     // Store prompt and response for analysis
     const logPath = "./tmp/trade-logs";
 
@@ -169,10 +160,11 @@ Return valid JSON.`;
     await fs.mkdir(logPath, { recursive: true });
 
     const logData = `timestamp: ${new Date().toISOString()},
-symbol: ${symbol},
-tradeType: ${tradeType},
+symbol: ${symbol}
+tradeType: ${tradeType}
+model: ${params.model}
 
-prompt: ${userPrompt},
+prompt: ${userPrompt}
 
 =======
 
