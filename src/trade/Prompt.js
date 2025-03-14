@@ -3,7 +3,7 @@ import { yfinanceMapping } from "../ticker/tickers.js";
 import { metaTradeAPI } from "./metaTradeApi.js";
 import { formatCurrency } from "../helpers/util.js";
 
-export class Prompt {
+export class TradePromptGenerator {
   static async getPrompt(symbol, tradeType) {
     const ticker = yfinanceMapping.mapSymbol(symbol);
     const tickerData = await getFullTickerData(ticker, tradeType);

@@ -3,7 +3,7 @@ import * as fs from "node:fs/promises";
 import { getGeminiModel, getGeminiReponse } from "../helpers/llm/gemini.js";
 import { getGroqModel } from "../helpers/llm/groq.js";
 import { metaTradeAPI } from "./metaTradeApi.js";
-import { Prompt } from "./Prompt.js";
+import { TradePromptGenerator } from "./Prompt.js";
 import { extractAmountFromText } from "../helpers/util.js";
 import { getLLMResponse } from "../helpers/llm/llm.js";
 
@@ -68,9 +68,9 @@ export class TradeParams {
   }
 
   static async getTradeParams(symbol, tradeType = "scalp") {
-    const systemPrompt = this.getSystemPrompt(tradeType);
+    const systemPrompt = TradePromptGenerator.getSystemPrompt(tradeType);
 
-    let userPrompt = await Prompt.getPrompt(symbol, tradeType);
+    let userPrompt = await TradePromptGenerator.getPrompt(symbol, tradeType);
     let response = await getLLMResponse({
       systemPrompt,
       userPrompt,
@@ -78,7 +78,7 @@ export class TradeParams {
     });
     const params = await this.extractTradeParamsFromResponse(response);
 
-    // userPrompt = await Prompt.getPrompt(symbol, tradeType);
+    // userPrompt = await TradePromptGenerator.getPrompt(symbol, tradeType);
     // response = await getLLMResponse({
     //   systemPrompt,
     //   userPrompt,
