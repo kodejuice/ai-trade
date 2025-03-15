@@ -13,15 +13,15 @@ export const sortTickers = async (tradeType) => {
   const tickers = getAllTickers();
   const comparisonCount = ~~(tickers.length * Math.log2(tickers.length));
 
-  // cache preview data for each ticker
-  console.log(`\nPre-caching ${tickers.length} ticker preview data...`)
-  for (const t of tickers) {
-    await getCachedResult(
-      `ai-trade-preview-${t}`,
-      () => getTickerPreview(yfinanceMapping.mapSymbol(t)),
-      60 * 60 * 24, // 1 day
-    );
-  }
+  // // cache preview data for each ticker
+  // console.log(`\nPre-caching ${tickers.length} ticker preview data...`)
+  // for (const t of tickers) {
+  //   await getCachedResult(
+  //     `ai-trade-preview-${t}`,
+  //     () => getTickerPreview(yfinanceMapping.mapSymbol(t)),
+  //     60 * 60 * 1, // 1 hour
+  //   );
+  // }
 
   logSortingStart(tickers.length, tradeType, comparisonCount);
 
