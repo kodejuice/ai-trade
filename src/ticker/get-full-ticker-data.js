@@ -34,7 +34,7 @@ export async function getFullTickerData(symbol, tradeType = "swing") {
     data["priceMetrics"] = getPriceMetrics(historicalData);
 
     data["volumeMetrics"] = getVolumeMetrics({
-      historical1mData: historicalData.historical1m,
+      historical1mData: Array.from(historicalData.historical1m.quotes),
       quoteSummary,
     });
 
@@ -139,6 +139,7 @@ export async function getFullTickerData(symbol, tradeType = "swing") {
   } catch (err) {
     return {
       message: "Error fetching ticker data",
+      err: `${err}`,
     };
   }
 }
