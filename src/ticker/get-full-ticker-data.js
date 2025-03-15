@@ -7,6 +7,7 @@ import {
   getHistoricalData,
   getPriceMetrics,
   getTechnicalIndicators,
+  getVolumeMetrics,
 } from "./get-preview-ticker-data.js";
 import { formatCurrency, formatNumber } from "../helpers/util.js";
 import { getTopNews } from "../helpers/news-sentiment.js";
@@ -26,13 +27,16 @@ export async function getFullTickerData(symbol, tradeType = "swing") {
   try {
     const data = {};
 
+    const { fundamentals, quoteSummary } = await getFundamentals(symbol);
+    data["fundamentals"] = fundamentals;
+
     const historicalData = await getHistoricalData(symbol);
     data["priceMetrics"] = getPriceMetrics(historicalData);
 
-    // console.log("historicalData", historicalData.historicalDaily);
-
-    const { fundamentals } = await getFundamentals(symbol);
-    data["fundamentals"] = fundamentals;
+    data["volumeMetrics"] = getVolumeMetrics({
+      historical1mData: historicalData.historical1m,
+      quoteSummary,
+    });
 
     data["quotes"] = [];
 

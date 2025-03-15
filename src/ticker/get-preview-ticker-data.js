@@ -166,6 +166,28 @@ export function getPriceMetrics({
   return priceMetrics;
 }
 
+export function getVolumeMetrics({ historical1mData, quoteSummary }) {
+  const _15minData = historical1mData.slice(-15);
+  const _15minVolume = formatNumber(
+    _15minData.reduce((s, record) => s + record.volume || 0, 0)
+  );
+  const isVolumeEmpty =
+    (quoteSummary.summaryDetail?.regularMarketVolume || 0) === 0 &&
+    (quoteSummary.summaryDetail?.averageVolume10days || 0) === 0;
+
+  return isVolumeEmpty
+    ? {}
+    : {
+        "current volume (15 min)": _15minVolume,
+        "average volume (10 days)": formatNumber(
+          quoteSummary.summaryDetail?.averageVolume10days
+        ),
+        "regular market volume": formatNumber(
+          quoteSummary.summaryDetail?.regularMarketVolume
+        ),
+      };
+}
+
 /**
  * Fetches historical ticker data for the given symbol at different time intervals.
  * Returns an object containing the historical data for daily, 15-minute, 5-minute, and 1-minute intervals.
@@ -398,25 +420,10 @@ export async function getTickerPreview(symbol) {
     // ----------------------
     // Volume Metrics
     // ----------------------
-    const _15minData = historical1mData.slice(-15);
-    const _15minVolume = formatNumber(
-      _15minData.reduce((s, record) => s + record.volume || 0, 0)
-    );
-    const isVolumeEmpty =
-      (quoteSummary.summaryDetail?.regularMarketVolume || 0) === 0 &&
-      (quoteSummary.summaryDetail?.averageVolume10days || 0) === 0;
-
-    const volumeMetrics = isVolumeEmpty
-      ? {}
-      : {
-          "current volume (15 min)": _15minVolume,
-          "average volume (10 days)": formatNumber(
-            quoteSummary.summaryDetail?.averageVolume10days
-          ),
-          "regular market volume": formatNumber(
-            quoteSummary.summaryDetail?.regularMarketVolume
-          ),
-        };
+    const volumeMetrics = getVolumeMetrics({
+      historical1mData,
+      quoteSummary,
+    });
 
     // ----------------------
     // Technical Indicators
@@ -489,7 +496,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     .then((data) => console.log(JSON.stringify(data, null, 1)))
     .catch((error) => console.error("Error fetching ticker data:", error))
     .finally(() => process.exit(0));
-  
+
   // (async () => {
   //   const t1 = "msft", t2 = "btc-usd";
   //   const data1 = await getTickerPreview(t1);
