@@ -32,7 +32,7 @@ export class TradeParams {
 
       const { stopsLevel, digits } = await metaTradeAPI.getSpec(symbol);
       const minStopsLevelInPips = (stopsLevel) / Math.pow(10, digits);
-      
+
       const { bid, ask } = await metaTradeAPI.getPrice(symbol);
       const spread = Math.abs(ask - bid);
 

@@ -52,7 +52,7 @@ const REDIS_CONFIG = () => ({
   pingInterval: 1000,
   socket: {
     reconnectStrategy: (retries) => {
-      if (retries > 10) {
+      if (retries > 3) {
         console.warn("Redis connection failed after multiple retries, disabling Redis");
         return false;
       }
