@@ -30,8 +30,8 @@ export const getOpenAIReponse = async ({
     return completion.choices[0].message.content;
   } catch (error) {
     if (`${error}`.includes(" (TPM): Limit")) {
-      await waitFor(70);
-      console.log("(openai) Rate limit exceeded. Waiting for 70 seconds...");
+      await waitFor(10);
+      console.log("(openai) Rate limit exceeded. Waiting for 10 seconds...");
       return getOpenAIReponse({ systemPrompt, userPrompt, model });
     }
 
