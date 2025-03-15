@@ -13,7 +13,7 @@ export class TradeParams {
   static async getTrade(symbol, tradeType = "scalp") {
     try {
       const params =
-        (await this.getTradeParams(symbol, tradeType)) || NoTradeObject;
+        (await this._getTradeParams(symbol, tradeType)) || NoTradeObject;
 
       await this.adjustTradeParams(params, symbol);
 
@@ -35,7 +35,7 @@ export class TradeParams {
       params.take_profit = extractAmountFromText(`${params.take_profit}`);
 
       const { stopsLevel, digits } = await metaTradeAPI.getSpec(symbol);
-      const minStopsLevelInPips = stopsLevel / Math.pow(10, digits);
+      const minStopsLevelInPips = (stopsLevel + 3) / Math.pow(10, digits);
 
       const { bid, ask } = await metaTradeAPI.getPrice(symbol);
       const spread = Math.abs(ask - bid);
@@ -79,9 +79,10 @@ export class TradeParams {
       // params.take_profit = Math.floor(params.take_profit * 100) / 100;
       // params.stop_loss = Math.floor(params.stop_loss * 100) / 100;
     }
+    console.log(`<< ${symbol} -> ${JSON.stringify(params)}>>`);
   }
 
-  static async getTradeParams(symbol, tradeType = "scalp") {
+  static async _getTradeParams(symbol, tradeType = "scalp") {
     const systemPrompt = TradePromptGenerator.getSystemPrompt(tradeType);
 
     let userPrompt = await TradePromptGenerator.getPrompt(symbol, tradeType);
