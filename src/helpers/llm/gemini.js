@@ -3,10 +3,10 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { getOpenAIReponse } from "./openai.js";
 
 let geminiModels = [
-  "gemini-2.0-flash-lite",
-  "gemini-2.0-flash-lite-preview-02-05",
   "gemini-2.0-flash",
   "gemini-2.0-flash-exp",
+  "gemini-2.0-flash-lite",
+  "gemini-2.0-flash-lite-preview-02-05",
   // "gemini-1.5-flash",
   // "gemini-1.5-flash-8b",
   "gemini-2.0-flash-thinking-exp-01-21",
@@ -51,16 +51,14 @@ export const getGeminiReponse = async ({
     return await tryGeminiModel(model);
   } catch (error) {
     // Try fallback models
-    if (model === geminiModels[0]) {
-      for (const fallbackModel of geminiModels.slice(1)) {
-        try {
-          const res = await tryGeminiModel(fallbackModel);
-          geminiModels[0] = fallbackModel;
-          lastModelUsed = fallbackModel;
-          return res;
-        } catch (err) {
-          continue;
-        }
+    for (const fallbackModel of geminiModels) {
+      try {
+        const res = await tryGeminiModel(fallbackModel);
+        geminiModels[0] = fallbackModel;
+        lastModelUsed = fallbackModel;
+        return res;
+      } catch (err) {
+        continue;
       }
     }
 
