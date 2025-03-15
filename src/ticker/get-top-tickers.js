@@ -4,7 +4,7 @@ import { getFundamentals } from "./get-preview-ticker-data.js";
 import { sortTickers } from "./sortTickers.js";
 import { yfinanceMapping } from "./tickers.js";
 
-export const TICKERS_CACHE_DURATION = 60 * 60 * 24 * 7; // 7 days
+export const TICKERS_CACHE_DURATION = 60 * 60 * 7; // 7 hours
 
 export const getTopTickers = async (tradeType = "scalp", n = 7, log = true) => {
   const sortedTickers = await getCachedResult(
