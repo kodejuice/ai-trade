@@ -46,75 +46,103 @@ let redisClient;
 
 const lruCache = new LRUCache(200);
 
-export const getCachedResult = async (
-  key,
-  fetchDataFn,
-  expirationSeconds = 780
-) => {
+// Redis client configuration
+const REDIS_CONFIG = () => ({
+  url: process.env.REDIS_URL,
+  pingInterval: 1000,
+  socket: {
+    reconnectStrategy: (retries) => {
+      if (retries > 10) {
+        console.warn("Redis connection failed after multiple retries, disabling Redis");
+        return false;
+      }
+      return Math.min(retries * 100, 3000);
+    },
+  },
+});
+
+// Redis client singleton
+let redisEnabled = true;
+async function getRedisClient() {
+  if (!redisEnabled) {
+    // Reset redisEnabled after 30 minutes
+    setTimeout(() => {
+      redisEnabled = true;
+    }, 30 * 60 * 1000);
+    return null;
+  }
+  
+  if (!redisClient) {
+    try {
+      redisClient = createClient(REDIS_CONFIG());
+      redisClient.on("error", (err) => {
+        console.warn("Redis connection error:", err);
+        if (["EADDRNOTAVAIL", "ECONNREFUSED"].includes(err.code)) {
+          redisEnabled = false;
+        }
+      });
+      await redisClient.connect();
+    } catch (error) {
+      console.warn("Failed to connect to Redis:", error);
+      redisEnabled = false;
+      return null;
+    }
+  }
+  return redisClient;
+}
+
+// Cache operations
+export async function getCachedResult(key, fetchDataFn, expirationSeconds = 780) {
   try {
     // Check LRU cache first
     const lruValue = lruCache.get(key);
     if (lruValue !== -1) return lruValue;
 
-    if (!redisClient) {
-      redisClient = createClient({
-        url: process.env.REDIS_URL,
-        pingInterval: 1000,
-      });
-      await redisClient.connect();
+    const client = await getRedisClient();
+    if (client) {
+      try {
+        const value = await client.get(key);
+        if (value !== null) {
+          const parsedValue = JSON.parse(value);
+          lruCache.put(key, parsedValue);
+          return parsedValue;
+        }
+      } catch (error) {
+        console.warn("Redis get operation failed:", error);
+        redisEnabled = false;
+      }
     }
 
-    let value = await redisClient.get(key);
-    if (value !== null) {
-      const parsedValue = JSON.parse(value);
-      lruCache.put(key, parsedValue);
-      return parsedValue;
-    }
-
-    value = await fetchDataFn();
-    await redisClient.set(key, JSON.stringify(value), {
-      EX: expirationSeconds,
-    });
+    // Fallback to fetching fresh data
+    const value = await fetchDataFn();
     lruCache.put(key, value);
-
+    
+    if (client) {
+      await client.set(key, JSON.stringify(value), { EX: expirationSeconds })
+        .catch(error => console.warn("Redis set operation failed:", error));
+    }
+    
     return value;
   } catch (error) {
-    console.error("Redis cache error:", error);
+    console.error("Cache error:", error);
     return await fetchDataFn();
   }
-};
+}
 
-export const setCachedResult = async (key, value, expirationSeconds = 780) => {
-  try {
-    if (!redisClient) {
-      redisClient = createClient({
-        url: process.env.REDIS_URL,
-        pingInterval: 1000,
-      });
-      await redisClient.connect();
-    }
-
-    await redisClient.set(key, JSON.stringify(value), {
-      EX: expirationSeconds,
-    });
-    lruCache.put(key, value);
-  } catch (error) {
-    console.error("Redis set cache error:", error);
+export async function setCachedResult(key, value, expirationSeconds = 780) {
+  lruCache.put(key, value);
+  const client = await getRedisClient();
+  if (client) {
+    await client.set(key, JSON.stringify(value), { EX: expirationSeconds })
+      .catch(error => console.warn("Redis set operation failed:", error));
   }
-};
+}
 
-export const invalidateCache = async (key) => {
-  try {
-    if (!redisClient) {
-      redisClient = createClient({
-        url: process.env.REDIS_URL,
-        pingInterval: 1000,
-      });
-      await redisClient.connect();
-    }
-
-    await redisClient.del(key);
-  } catch (error) {
-    console.error("Redis invalidate cache error:", error);
+export async function invalidateCache(key) {
+  lruCache.remove(key);
+  const client = await getRedisClient();
+  if (client) {
+    await client.del(key)
+      .catch(error => console.warn("Redis delete operation failed:", error));
   }
-};
+}
