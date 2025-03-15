@@ -26,16 +26,16 @@ export function calculateSwingScore(data) {
 
   // --- SCORING FACTORS ---
 
-  // 1. Price Momentum Analysis (25% of total score)
+  // 1. Price Momentum Analysis (30% of total score)
   const momentumScore = analyzeRecentMomentum(parsedData);
 
-  // 2. Technical Indicator Analysis (35% of total score)
+  // 2. Technical Indicator Analysis (40% of total score)
   const technicalScore = analyzeTechnicalIndicators(parsedData);
 
   // 3. Volume Analysis (15% of total score)
   const volumeScore = analyzeVolume(parsedData);
 
-  // 4. Fundamental Analysis (20% of total score)
+  // 4. Fundamental Analysis (10% of total score)
   const fundamentalScore = analyzeFundamentals(parsedData);
 
   // 5. Sentiment Analysis (5% of total score)
@@ -43,10 +43,10 @@ export function calculateSwingScore(data) {
 
   // Combine scores with updated weights
   score =
-    momentumScore * 0.25 +
-    technicalScore * 0.35 +
+    momentumScore * 0.3 +
+    technicalScore * 0.4 +
     volumeScore * 0.15 +
-    fundamentalScore * 0.2 +
+    fundamentalScore * 0.1 +
     sentimentScore * 0.05;
 
   // Scale to 0-100 range
