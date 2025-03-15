@@ -163,7 +163,8 @@ class MetaTradeApi {
           stop_loss,
           take_profit,
           {
-            comment: param.model,
+            // comment: param.model,
+            // clientId: `${tradeType}_${symbol}_${Date.now()}`,
             trailingStopLoss: {
               distance: {
                 distance: 50,
