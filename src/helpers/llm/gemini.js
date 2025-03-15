@@ -48,8 +48,12 @@ export const getGeminiReponse = async ({
   }
 
   try {
-    return await tryGeminiModel(model);
+    const resp = await tryGeminiModel(model);
+    lastModelUsed = model;
+    return resp;
   } catch (error) {
+    console.log("Error with Gemini model:", model, error);
+
     // Try fallback models
     for (const fallbackModel of geminiModels) {
       try {
