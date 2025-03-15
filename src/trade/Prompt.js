@@ -63,7 +63,10 @@ Analyze the following asset data as an expert scalp trader. Follow this structur
 Given this data: ${JSON.stringify(tickerData, null, 1)}
 
 Critical Price Levels:
-- Current Price: ${tickerData.latestPrice.bid}
+- Current Price:
+  Buy/Ask Price = ${tickerData.latestPrice.ask}
+  Sell/Bid Price = ${tickerData.latestPrice.bid}
+
 - BB Upper: ${technicalIndicators.BBANDS?.upper}
 - BB Lower: ${technicalIndicators.BBANDS?.lower}
 - EMA9: ${technicalIndicators.EMA9}
@@ -74,6 +77,8 @@ Produce JSON response with:
 - Strategy matching market type EXACTLY from list
 - Clear numeric stops/targets using ATR/BB levels
 - Trade ONLY if price at key technical level with confirmation
+- AVOID trading when there's low liquidity / low volume
+- AVOID trading if the provided data is incomplete
 
 Response format:
 ((({
@@ -91,6 +96,9 @@ Return '((({"no_trade": true})))' if:
 - Confidence < 7
 - Conflicting signals
 - Price between technical levels without clear edge
+- There is low liquidity or volume
+
+If we are avoiding a trade return ((({"no_trade": true})))
 `;
   }
 
@@ -145,6 +153,8 @@ Produce JSON response with:
 - Fundamental/technical alignment assessment
 - Price targets based on measurable patterns
 - Minimum 2 confirmation signals required
+- AVOID trading when there's low liquidity / low volume
+- AVOID trading if the provided data is incomplete
 
 Response format:
 ((({
@@ -166,6 +176,9 @@ Reject trades '((({"no_trade": true})))' if:
 - Earnings within 5 trading days
 - Volatility < historical average
 - Conflicting technical/fundamental signals
+- There is low liquidity or volume
+
+If we are avoiding a trade return ((({"no_trade": true})))
 `;
   }
 
