@@ -19,7 +19,7 @@ export class TradeParams {
 
       return params;
     } catch (error) {
-      console.log(`Failed to get params ${error}`);
+      console.log(`Failed to get params [${symbol}] ${error}`);
       return NoTradeObject;
     }
   }
@@ -53,8 +53,8 @@ export class TradeParams {
           params.take_profit = minTakeProfit;
         }
       } else if (params.order_type == "sell") {
-        const minStopLoss = ask + (minStopsLevelInPips + spread);
-        const minTakeProfit = ask - (minStopsLevelInPips + spread);
+        const minStopLoss = bid + (minStopsLevelInPips + spread);
+        const minTakeProfit = bid - (minStopsLevelInPips + spread);
 
         // params.adjusted_stop_loss = Math.max(params.stop_loss, minStopLoss);
         if (params.stop_loss < minStopLoss) {
@@ -70,8 +70,8 @@ export class TradeParams {
 
       params.spread = Math.round(spread * 100) / 100;
       params.stopsLevel = Math.round(stopsLevel * 100) / 100;
-      params.take_profit = Math.floor(params.take_profit * 100) / 100;
-      params.stop_loss = Math.floor(params.stop_loss * 100) / 100;
+      // params.take_profit = Math.floor(params.take_profit * 100) / 100;
+      // params.stop_loss = Math.floor(params.stop_loss * 100) / 100;
     }
   }
 
@@ -188,11 +188,11 @@ response: ${response}`;
     // loop over files in log directory and delete old files
     // read time from filename
     const files = await fs.readdir(logPath);
-    // Keep only files from the last 30 minutes
-    const _30mins = Date.now() - 30 * 60 * 1000;
+    // Keep only files from the last 3 hours
+    const _3hrs = Date.now() - 3 * 60 * 60 * 1000;
     for (const file of files) {
       const timestamp = parseInt(file.split("-").pop().replace(".txt", ""));
-      if (timestamp < _30mins) {
+      if (timestamp < _3hrs) {
       await fs.unlink(`${logPath}/${file}`);
       }
     }

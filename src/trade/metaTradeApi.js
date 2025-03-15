@@ -48,6 +48,23 @@ class MetaTradeApi {
   }
 
   /**
+   * Retrieves the positions for the specified symbol.
+   *
+   * @param {string} symbol - The trading symbol to retrieve positions for.
+   * @returns {Promise<import("metaapi.cloud-sdk").MetatraderPosition[]>} - An array of positions for the specified symbol.
+   */
+  async getPositionsBySymbol(symbol) {
+    try {
+      const connection = await this.getConnection();
+      const terminalState = connection.terminalState;
+      const positions = terminalState.positions;
+      return positions.filter((position) => `${position.symbol}`.toLowerCase() === symbol.toLowerCase());
+    } catch (error) {
+      return [];
+    }
+  }
+
+  /**
    * @param {Object} param - Trade parameters
    * @param {string} param.symbol - Trading symbol
    * @param {string} param.tradeType - Type of trade ('scalp' or 'swing')
@@ -95,11 +112,12 @@ class MetaTradeApi {
       console.log(
         `> [Spread: ${param.spread} || Stops level: ${param.minStopsLevelInPips}]`
       );
+      console.log(`1 volume = ${symbolSpec.contractSize} ${symbol}`);
+      console.log(`|Ask price: ${symbolSpec.baseCurrency} ${param.price.ask}|`);
+      console.log(`|Bid price: ${symbolSpec.baseCurrency} ${param.price.bid}|`);
 
       let tradeResp;
       if (order_type == "buy") {
-        console.log(`Buy price: ${symbolSpec.baseCurrency} ${param.price.bid}`);
-        console.log(`1 volume: ${symbolSpec.contractSize} ${symbol}`);
         // how much volume can be bought with 1% of our free margin?
         const amountPerTrade = accountInfo.freeMargin / 100;
         const volume =
@@ -124,7 +142,7 @@ class MetaTradeApi {
           stop_loss,
           take_profit,
           {
-            comment: param.model,
+            comment: param.model.slice(0, 15),
             trailingStopLoss: {
               distance: {
                 distance: 50,
@@ -134,11 +152,6 @@ class MetaTradeApi {
           }
         );
       } else if (param.order_type == "sell") {
-        console.log(
-          `Sell price: ${symbolSpec.baseCurrency} ${param.price.ask}`
-        );
-        console.log(`1 volume: ${symbolSpec.contractSize} ${symbol}`);
-
         // how much volume can be sold with 1% of our free margin?
         const amountPerTrade = accountInfo.freeMargin / 100;
         const volume =
@@ -163,7 +176,7 @@ class MetaTradeApi {
           stop_loss,
           take_profit,
           {
-            // comment: param.model,
+            comment: param.model.slice(0, 15),
             // clientId: `${tradeType}_${symbol}_${Date.now()}`,
             trailingStopLoss: {
               distance: {

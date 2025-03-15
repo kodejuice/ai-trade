@@ -33,7 +33,7 @@ export class TradePromptGenerator {
   }
 
   static scalpTradePrompt(tickerData) {
-    const technicalIndicators = tickerData.quotes.at(-1).technicalIndicators;
+    const technicalIndicators = tickerData?.quotes?.at(-1)?.technicalIndicators || {};
 
     return `
 Analyze the following asset data as an expert scalp trader. Follow this structured approach:
@@ -53,6 +53,7 @@ Analyze the following asset data as an expert scalp trader. Follow this structur
    - Always set stops: 2x ATR (${2 * technicalIndicators.ATR} ± current price)
    - Profit targets: 1.5x ATR or key technical levels (EMA20 / BB middle band)
    - Position size: Smaller in volatile markets (≤2% risk)
+   - Ensure a Risk/Reward ratio of 1:2 or better
 
 4. Execution Rules:
    - Require 3 confirming signals (e.g. BB position + RSI + EMA alignment)
@@ -62,11 +63,9 @@ Analyze the following asset data as an expert scalp trader. Follow this structur
 Given this data: ${JSON.stringify(tickerData, null, 1)}
 
 Critical Price Levels:
-- Current Price:
-  Buy/Bid = ${tickerData.latestPrice.bid}
-  Sell/Ask = ${tickerData.latestPrice.ask}
-- BB Upper: ${technicalIndicators.BBANDS.upper}
-- BB Lower: ${technicalIndicators.BBANDS.lower}
+- Current Price: ${tickerData.latestPrice.bid}
+- BB Upper: ${technicalIndicators.BBANDS?.upper}
+- BB Lower: ${technicalIndicators.BBANDS?.lower}
 - EMA9: ${technicalIndicators.EMA9}
 - ATR Stop Buffer: ±${2 * technicalIndicators.ATR}
 
@@ -96,7 +95,7 @@ Return '((({"no_trade": true})))' if:
   }
 
   static swingTradePrompt(tickerData) {
-    const technicalIndicators = tickerData.quotes.at(-1).technicalIndicators;
+    const technicalIndicators = tickerData?.quotes?.at(-1)?.technicalIndicators || {};
 
     return `
 Analyze the following asset data as a professional swing trader. Use this framework:
@@ -137,9 +136,7 @@ Analyze the following asset data as a professional swing trader. Use this framew
 Given this data: ${JSON.stringify(tickerData, null, 1)}
 
 Critical Levels:
-- Current Price:
-  Buy/Bid = ${tickerData.latestPrice.bid}
-  Sell/Ask = ${tickerData.latestPrice.ask}
+- Current Price: ${tickerData.latestPrice.bid}
 - 50D SMA: ${technicalIndicators.SMA50}
 - 200D SMA: ${technicalIndicators.SMA200}
 
