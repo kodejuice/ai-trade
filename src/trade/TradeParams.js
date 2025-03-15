@@ -17,6 +17,10 @@ export class TradeParams {
 
       await this.adjustTradeParams(params, symbol);
 
+      if (params.no_trade) {
+        return NoTradeObject;
+      }
+
       return params;
     } catch (error) {
       console.log(`Failed to get params [${symbol}] ${error}`);
@@ -31,7 +35,7 @@ export class TradeParams {
       params.take_profit = extractAmountFromText(`${params.take_profit}`);
 
       const { stopsLevel, digits } = await metaTradeAPI.getSpec(symbol);
-      const minStopsLevelInPips = (stopsLevel) / Math.pow(10, digits);
+      const minStopsLevelInPips = stopsLevel / Math.pow(10, digits);
 
       const { bid, ask } = await metaTradeAPI.getPrice(symbol);
       const spread = Math.abs(ask - bid);
@@ -39,9 +43,11 @@ export class TradeParams {
       params.spread = spread;
       params.minStopsLevelInPips = minStopsLevelInPips;
 
+      const minDistanceForStopLoss = minStopsLevelInPips + spread;
+
       if (params.order_type == "buy") {
-        const minStopLoss = bid - (minStopsLevelInPips + spread);
-        const minTakeProfit = bid + (minStopsLevelInPips + spread);
+        const minStopLoss = bid - minDistanceForStopLoss;
+        const minTakeProfit = bid + minDistanceForStopLoss;
 
         // params.adjusted_stop_loss = Math.min(params.stop_loss, minStopLoss);
         if (params.stop_loss > minStopLoss) {
@@ -53,8 +59,8 @@ export class TradeParams {
           params.take_profit = minTakeProfit;
         }
       } else if (params.order_type == "sell") {
-        const minStopLoss = bid + (minStopsLevelInPips + spread);
-        const minTakeProfit = bid - (minStopsLevelInPips + spread);
+        const minStopLoss = ask + minDistanceForStopLoss;
+        const minTakeProfit = ask - minDistanceForStopLoss;
 
         // params.adjusted_stop_loss = Math.max(params.stop_loss, minStopLoss);
         if (params.stop_loss < minStopLoss) {
@@ -193,7 +199,7 @@ response: ${response}`;
     for (const file of files) {
       const timestamp = parseInt(file.split("-").pop().replace(".txt", ""));
       if (timestamp < _3hrs) {
-      await fs.unlink(`${logPath}/${file}`);
+        await fs.unlink(`${logPath}/${file}`);
       }
     }
   }
