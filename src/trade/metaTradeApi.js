@@ -92,7 +92,9 @@ class MetaTradeApi {
       console.log("1% of free margin:", accountInfo.freeMargin / 100);
       console.log(`> Take profit: ${param.take_profit}`);
       console.log(`> Stop loss: ${param.stop_loss}`);
-      console.log(`> [Spread: ${param.spread} || Stops level: ${param.minStopsLevelInPips}]`);
+      console.log(
+        `> [Spread: ${param.spread} || Stops level: ${param.minStopsLevelInPips}]`
+      );
 
       let tradeResp;
       if (order_type == "buy") {
@@ -122,6 +124,7 @@ class MetaTradeApi {
           stop_loss,
           take_profit,
           {
+            comment: param.model,
             trailingStopLoss: {
               distance: {
                 distance: 50,
@@ -160,13 +163,14 @@ class MetaTradeApi {
           stop_loss,
           take_profit,
           {
+            comment: param.model,
             trailingStopLoss: {
               distance: {
                 distance: 50,
                 units: "RELATIVE_POINTS",
               },
             },
-          },
+          }
         );
       }
 
