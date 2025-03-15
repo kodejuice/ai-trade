@@ -95,6 +95,15 @@ export class TradeParams {
     const model = getGroqModel() || getGeminiModel() || "gpt";
     const params = await this.extractTradeParamsFromResponse(response);
 
+    if (
+      !params ||
+      params.no_trade == true ||
+      !["buy", "sell"].includes(params.order_type) ||
+      !(params.confidence_score >= 6.5)
+    ) {
+      return null;
+    }
+
     this.logTrade({
       symbol,
       tradeType,
@@ -103,14 +112,6 @@ export class TradeParams {
       model,
     });
 
-    if (
-      !params ||
-      params.no_trade == true ||
-      !["buy", "sell"].includes(params.order_type) ||
-      params.confidence_score < 6.5
-    ) {
-      return null;
-    }
 
     params.tradeType = tradeType;
     params.symbol = symbol;

@@ -167,7 +167,7 @@ Response format:
   "take_profit": target_price,
   "stop_loss": calculated_price,
   "time_horizon": "5-14 days",
-  "confidence_factor": 1-10
+  "confidence_score": 1-10
 })))
 
 Reject trades '((({"no_trade": true})))' if:
