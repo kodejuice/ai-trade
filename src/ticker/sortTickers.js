@@ -1,5 +1,5 @@
 import { mergeSort } from "../helpers/merge-sort.js";
-import { msToTime, waitFor } from "../helpers/util.js";
+import { msToTime } from "../helpers/util.js";
 import { getAllTickers, yfinanceMapping } from "./tickers.js";
 
 import { TickerComparator } from "./TickerComparator-algorithm.js";
@@ -14,7 +14,7 @@ export const sortTickers = async (tradeType) => {
   const comparisonCount = ~~(tickers.length * Math.log2(tickers.length));
 
   // cache preview data for each ticker
-  waitFor(3).then(() => console.log(`\nPre-caching ${tickers.length} ticker preview data...`));
+  console.log(`\nPre-caching ${tickers.length} ticker preview data...`)
   for (const t of tickers) {
     await getCachedResult(
       `ai-trade-preview-${t}`,
@@ -95,5 +95,6 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   (async () => {
     await sortAndCacheTickers("scalp");
     await sortAndCacheTickers("swing");
+    process.exit(0);
   })();
 }
