@@ -68,6 +68,7 @@ export class TradeParams {
       }
       params.price = { bid, ask };
 
+      params.spread = Math.round(spread * 100) / 100;
       params.stopsLevel = Math.round(stopsLevel * 100) / 100;
       params.take_profit = Math.floor(params.take_profit * 100) / 100;
       params.stop_loss = Math.floor(params.stop_loss * 100) / 100;
@@ -81,7 +82,8 @@ export class TradeParams {
     let response = await getLLMResponse({
       systemPrompt,
       userPrompt,
-      platform: "gemini",
+      platform: "groq",
+      // platform: "gemini",
     });
     const model = getGroqModel() || getGeminiModel() || "gpt";
     const params = await this.extractTradeParamsFromResponse(response);
