@@ -142,7 +142,7 @@ class MetaTradeApi {
           stop_loss,
           take_profit,
           {
-            comment: param.model.slice(0, 15),
+            comment: param.tradeType,
             trailingStopLoss: {
               distance: {
                 distance: 50,
@@ -176,7 +176,7 @@ class MetaTradeApi {
           stop_loss,
           take_profit,
           {
-            comment: param.model.slice(0, 15),
+            comment: param.tradeType,
             // clientId: `${tradeType}_${symbol}_${Date.now()}`,
             trailingStopLoss: {
               distance: {
@@ -190,7 +190,7 @@ class MetaTradeApi {
 
       console.log("Trade response:", tradeResp);
 
-      await connection.unsubscribeFromMarketData(symbol);
+      // await connection.unsubscribeFromMarketData(symbol);
     } catch (err) {
       console.error("Error opening trade:", err?.message);
     } finally {
@@ -208,7 +208,7 @@ class MetaTradeApi {
       await connection.subscribeToMarketData(symbol);
 
       const price = connection.terminalState.price(symbol);
-      await connection.unsubscribeFromMarketData(symbol);
+      // await connection.unsubscribeFromMarketData(symbol); 
 
       return price ? { ask: price.ask, bid: price.bid } : {};
     } catch (error) {
@@ -230,7 +230,7 @@ class MetaTradeApi {
       const connection = await this.getConnection();
       await connection.subscribeToMarketData(symbol);
       const spec = connection.terminalState.specification(symbol);
-      await connection.unsubscribeFromMarketData(symbol);
+      // await connection.unsubscribeFromMarketData(symbol);
       return (this.specCache[symbol] = spec);
     } catch (error) {
       console.error(`Failed to get spec for ${symbol}:`, error);
