@@ -33,10 +33,10 @@ export function calculateScalpScore(data) {
   // 1. Volatility Score (25% weight)
   const volatilityScore = calculateVolatilityScore(parsedData);
 
-  // 2. Volume Analysis (20% weight)
+  // 2. Volume Analysis (30% weight)
   const volumeScore = calculateVolumeScore(parsedData);
 
-  // 3. Technical Indicators (30% weight)
+  // 3. Technical Indicators (20% weight)
   const technicalScore = calculateTechnicalScore(parsedData);
 
   // 4. Momentum Score (15% weight)
@@ -48,8 +48,8 @@ export function calculateScalpScore(data) {
   // Combine weighted scores
   score =
     volatilityScore * 0.25 +
-    volumeScore * 0.2 +
-    technicalScore * 0.3 +
+    volumeScore * 0.3 +
+    technicalScore * 0.2 +
     momentumScore * 0.15 +
     sentimentScore * 0.1;
 
