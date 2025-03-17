@@ -1,11 +1,11 @@
 import OpenAI from "openai";
-
 import { waitFor } from "../util.js";
 
 export const getOpenAIReponse = async ({
   systemPrompt,
   userPrompt,
   model = "gpt-4o-mini",
+  retryCount = 0,
 }) => {
   const client = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
@@ -22,7 +22,6 @@ export const getOpenAIReponse = async ({
       model,
       messages: messages,
       temperature: 0.8,
-      // max_completion_tokens: 300,
       frequency_penalty: 0,
       presence_penalty: 0,
     });
@@ -30,9 +29,15 @@ export const getOpenAIReponse = async ({
     return completion.choices[0].message.content;
   } catch (error) {
     if (`${error}`.includes(" (TPM): Limit")) {
-      await waitFor(10);
-      console.log("(openai) Rate limit exceeded. Waiting for 10 seconds...");
-      return getOpenAIReponse({ systemPrompt, userPrompt, model });
+      const waitTime = Math.min(70 * (retryCount + 1), 300); // Incremental wait, max 5 minutes
+      console.log(`(openai) Rate limit exceeded. Waiting for ${waitTime} seconds...`);
+      await waitFor(waitTime);
+      return getOpenAIReponse({ 
+        systemPrompt, 
+        userPrompt, 
+        model, 
+        retryCount: retryCount + 1 
+      });
     }
 
     console.error("Error getting chat response:", `${error}`);
