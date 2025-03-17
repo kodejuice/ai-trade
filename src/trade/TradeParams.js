@@ -74,8 +74,10 @@ export class TradeParams {
       }
       params.price = { bid, ask };
 
-      params.spread = Math.round(spread * 100) / 100;
-      params.stopsLevel = Math.round(stopsLevel * 100) / 100;
+      params.spread = spread.toFixed(digits);
+      params.stopsLevel = stopsLevel.toFixed(digits);
+      params.take_profit = params.take_profit.toFixed(digits);
+      params.stop_loss = params.stop_loss.toFixed(digits);
       // params.take_profit = Math.floor(params.take_profit * 100) / 100;
       // params.stop_loss = Math.floor(params.stop_loss * 100) / 100;
     }

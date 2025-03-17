@@ -58,7 +58,10 @@ class MetaTradeApi {
       const connection = await this.getConnection();
       const terminalState = connection.terminalState;
       const positions = terminalState.positions;
-      return positions.filter((position) => `${position.symbol}`.toLowerCase() === symbol.toLowerCase());
+      return positions.filter(
+        (position) =>
+          `${position.symbol}`.toLowerCase() === symbol.toLowerCase()
+      );
     } catch (error) {
       return [];
     }
@@ -129,10 +132,11 @@ class MetaTradeApi {
           );
           return;
         }
-        const volumeInLots = Math.min(
-          symbolSpec.maxVolume,
-          Math.floor(volume * 100) / 100
-        );
+        // const volumeInLots = Math.min(
+        //   symbolSpec.maxVolume,
+        //   Math.floor(volume * 100) / 100
+        // );
+        const volumeInLots = symbolSpec.minVolume;
         console.log(`Volume buyable: ${volumeInLots}`);
 
         tradeResp = await connection.createMarketBuyOrder(
@@ -163,10 +167,11 @@ class MetaTradeApi {
           );
           return;
         }
-        const volumeInLots = Math.min(
-          symbolSpec.maxVolume,
-          Math.floor(volume * 100) / 100
-        );
+        // const volumeInLots = Math.min(
+        //   symbolSpec.maxVolume,
+        //   Math.floor(volume * 100) / 100
+        // );
+        const volumeInLots = symbolSpec.minVolume;
         console.log(`Volume sellable: ${volumeInLots}`);
 
         tradeResp = await connection.createMarketSellOrder(
@@ -198,6 +203,32 @@ class MetaTradeApi {
     }
   }
 
+  /**
+   * Calculates the minimum stops distance for a given symbol, including the current spread.
+   *
+   * @param {string} symbol - The symbol to calculate the stops distance for.
+   * @returns {Promise<number>} The minimum stops distance in pips, including the current spread.
+   * @throws {Error} If the symbol is not provided.
+   */
+  async getStopsDistance(symbol) {
+    if (!symbol) {
+      throw new Error("Symbol is required");
+    }
+
+    try {
+      const stopsLevelPadding = 2; // 2 pips
+      const { stopsLevel, digits } = await metaTradeAPI.getSpec(symbol);
+      const minStopsLevelInPips = (stopsLevel + stopsLevelPadding) / Math.pow(10, digits);
+
+      const { bid, ask } = await metaTradeAPI.getPrice(symbol);
+      const spread = Math.abs(ask - bid);
+
+      return minStopsLevelInPips + spread;
+    } catch (error) {
+      return 100;
+    }
+  }
+
   async getPrice(symbol) {
     if (!symbol) {
       throw new Error("Symbol is required");
@@ -208,7 +239,7 @@ class MetaTradeApi {
       await connection.subscribeToMarketData(symbol);
 
       const price = connection.terminalState.price(symbol);
-      // await connection.unsubscribeFromMarketData(symbol); 
+      // await connection.unsubscribeFromMarketData(symbol);
 
       return price ? { ask: price.ask, bid: price.bid } : {};
     } catch (error) {

@@ -15,11 +15,11 @@ export const getTopTickers = async (tradeType = "scalp", n = 7, log = true) => {
 
   const tradableTickers = await filterTradableTickers(sortedTickers, n);
 
-  if (log) {
-    console.log(
-      `[[(${tradeType}): ${tradableTickers.length} tickers open for trading]] => [${tradableTickers}]\n`
-    );
-  }
+  // if (log) {
+  //   console.log(
+  //     `[[(${tradeType}): ${tradableTickers.length} tickers open for trading]] => [${tradableTickers}]\n`
+  //   );
+  // }
 
   tradableTickers.sort(() => Math.random() - 0.5); // shuffle
   return tradableTickers;

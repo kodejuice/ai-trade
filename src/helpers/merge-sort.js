@@ -1,4 +1,10 @@
-
+/**
+ * Sorts an array using the merge sort algorithm.
+ *
+ * @param {any[]} arr - The array to be sorted.
+ * @param {(a: any, b: any) => Promise<number>} [comparator] - An optional comparator function that takes two elements and returns a Promise that resolves to a number indicating their relative order.
+ * @returns {Promise<any[]>} - A Promise that resolves to the sorted array.
+ */
 export async function mergeSort(arr, comparator = async (a, b) => a - b) {
   if (arr.length <= 1) return arr;
 
