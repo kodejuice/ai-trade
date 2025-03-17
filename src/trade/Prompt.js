@@ -77,8 +77,11 @@ Produce JSON response with:
 - Strategy matching market type EXACTLY from list
 - Clear numeric stops/targets using ATR/BB levels
 - Trade ONLY if price at key technical level with confirmation
+
+Note:
 - AVOID trading when there's low liquidity / low volume
 - AVOID trading if the provided data is incomplete
+- AVOID trading when there is a wide spread between bid/ask
 
 Response format:
 ((({
@@ -93,10 +96,11 @@ Response format:
 })))
 
 Return '((({"no_trade": true})))' if:
-- Confidence < 7
 - Conflicting signals
 - Price between technical levels without clear edge
+- Not enough confirmation
 - There is low liquidity or volume
+- There is a wide spread between bid/ask
 
 If we are avoiding a trade return ((({"no_trade": true})))
 `;
@@ -153,8 +157,11 @@ Produce JSON response with:
 - Fundamental/technical alignment assessment
 - Price targets based on measurable patterns
 - Minimum 2 confirmation signals required
+
+Note:
 - AVOID trading when there's low liquidity / low volume
 - AVOID trading if the provided data is incomplete
+- AVOID trading when there is a wide spread between bid/ask
 
 Response format:
 ((({
@@ -171,16 +178,20 @@ Response format:
 })))
 
 Reject trades '((({"no_trade": true})))' if:
-- Confidence < 7
 - Price between key moving averages
 - Earnings within 5 trading days
 - Volatility < historical average
+- Not enough confirmation
 - Conflicting technical/fundamental signals
 - There is low liquidity or volume
 
 If we are avoiding a trade return ((({"no_trade": true})))
 `;
   }
+
+}
+
+/*
 
   static getStrategyPrompt() {
     return `Examine the market type from the quote data and use the following strategies to make trading decisions.
@@ -241,10 +252,8 @@ Risk-Management Rules:
 ------
 `;
   }
-}
 
-/*
-  static scalpTradePrompt(tickerData) {
+static scalpTradePrompt(tickerData) {
     return `
 Given the following asset data:
 
@@ -315,3 +324,4 @@ If it is not the best time to enter a trade, just return a {"no_trade": true} ob
     // (1 point = 0.0001 of the price)
   }
 */
+
