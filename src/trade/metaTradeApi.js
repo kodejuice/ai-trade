@@ -152,7 +152,7 @@ class MetaTradeApi {
             comment: param.tradeType,
             trailingStopLoss: {
               distance: {
-                distance: 50,
+                distance: 20,
                 units: "RELATIVE_POINTS",
               },
             },
@@ -188,7 +188,7 @@ class MetaTradeApi {
             // clientId: `${tradeType}_${symbol}_${Date.now()}`,
             trailingStopLoss: {
               distance: {
-                distance: 50,
+                distance: 20,
                 units: "RELATIVE_POINTS",
               },
             },
