@@ -269,9 +269,9 @@ class MetaTradeApi {
       throw new Error("Symbol is required");
     }
 
-    // if (symbol in this.specCache) {
-    //   return this.specCache[symbol];
-    // }
+    if (symbol in this.specCache) {
+      return this.specCache[symbol];
+    }
 
     try {
       const connection = await this.getConnection();
