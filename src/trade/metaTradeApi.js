@@ -1,3 +1,6 @@
+import dotenv from "dotenv";
+dotenv.config();
+
 import MetaApi from "metaapi.cloud-sdk/esm-node";
 
 const token = process.env.META_API_CLOUD_TOKEN;
