@@ -213,9 +213,16 @@ class MetaTradeApi {
    * @returns {Promise<number>} The minimum stops distance in pips, including the current spread.
    * @throws {Error} If the symbol is not provided.
    */
+  #stopsDistanceCache = new Map();
+
   async getStopsDistance(symbol) {
     if (!symbol) {
       throw new Error("Symbol is required");
+    }
+
+    const cached = this.#stopsDistanceCache.get(symbol);
+    if (cached && Date.now() - cached.timestamp < 30 * 60 * 1000) {
+      return cached.value;
     }
 
     try {
@@ -225,8 +232,14 @@ class MetaTradeApi {
 
       const { bid, ask } = await metaTradeAPI.getPrice(symbol);
       const spread = Math.abs(ask - bid);
+      const result = minStopsLevelInPips + spread;
 
-      return minStopsLevelInPips + spread;
+      this.#stopsDistanceCache.set(symbol, {
+        value: result,
+        timestamp: Date.now()
+      });
+
+      return result;
     } catch (error) {
       return 100;
     }
