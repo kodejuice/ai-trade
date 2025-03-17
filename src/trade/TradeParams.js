@@ -172,7 +172,7 @@ Return valid JSON.`;
 
   static async logTrade({ symbol, tradeType, userPrompt, response, model }) {
     // Store prompt and response for analysis
-    const logPath = "./tmp/trade-logs";
+    const logPath = `./tmp/trade-logs/${symbol}`;
 
     // Ensure log directory exists
     await fs.mkdir(logPath, { recursive: true });
@@ -181,6 +181,7 @@ Return valid JSON.`;
 symbol: ${symbol}
 tradeType: ${tradeType}
 model: ${model}
+time: ${new Date().toLocaleString()}
 
 prompt: ${userPrompt}
 
@@ -189,13 +190,13 @@ prompt: ${userPrompt}
 response: ${response}`;
 
     await fs.writeFile(
-      `${logPath}/${symbol}-${tradeType}-${Date.now()}.txt`,
+      `${logPath}/${tradeType}-${Date.now()}.txt`,
       logData
     );
 
     // loop over files in log directory and delete old files
     // read time from filename
-    const files = await fs.readdir(logPath);
+    const files = await fs.readdir(logPath, {recursive: true});
     // Keep only files from the last 3 hours
     const _3hrs = Date.now() - 3 * 60 * 60 * 1000;
     for (const file of files) {
