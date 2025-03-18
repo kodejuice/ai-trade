@@ -135,11 +135,11 @@ class MetaTradeApi {
           );
           return;
         }
-        // const volumeInLots = Math.min(
-        //   symbolSpec.maxVolume,
-        //   Math.floor(volume * 100) / 100
-        // );
-        const volumeInLots = symbolSpec.minVolume;
+        const volumeInLots = Math.min(
+          symbolSpec.maxVolume,
+          Math.floor(volume * 100) / 100
+        );
+        // const volumeInLots = symbolSpec.minVolume;
         console.log(`Volume buyable: ${volumeInLots}`);
 
         tradeResp = await connection.createMarketBuyOrder(
@@ -170,11 +170,11 @@ class MetaTradeApi {
           );
           return;
         }
-        // const volumeInLots = Math.min(
-        //   symbolSpec.maxVolume,
-        //   Math.floor(volume * 100) / 100
-        // );
-        const volumeInLots = symbolSpec.minVolume;
+        const volumeInLots = Math.min(
+          symbolSpec.maxVolume,
+          Math.floor(volume * 100) / 100
+        );
+        // const volumeInLots = symbolSpec.minVolume;
         console.log(`Volume sellable: ${volumeInLots}`);
 
         tradeResp = await connection.createMarketSellOrder(
@@ -226,7 +226,7 @@ class MetaTradeApi {
     }
 
     try {
-      const stopsLevelPadding = 2; // 2 pips
+      const stopsLevelPadding = 1; // 1 pip
       const { stopsLevel, digits } = await metaTradeAPI.getSpec(symbol);
       const minStopsLevelInPips = (stopsLevel + stopsLevelPadding) / Math.pow(10, digits);
 
