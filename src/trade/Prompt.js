@@ -58,7 +58,9 @@ Analyze the following asset data as an expert scalp trader. Follow this structur
 4. Execution Rules:
    - Require 3 confirming signals (e.g. BB position + RSI + EMA alignment)
    - Avoid trades with conflicting indicators
-   - Prioritize recent price action (<1hr timeframes)
+   - Prioritize recent price action (<5 minute timeframe)
+   - Time Horizon: Typical trade duration 1-15 minutes - close positions before momentum fade
+   - Scalp Exit Protocol: Take partial profits at 0.75x ATR if price stalls
 
 Given this data: ${JSON.stringify(tickerData, null, 1)}
 
@@ -79,16 +81,17 @@ Produce JSON response with:
 - Trade ONLY if price at key technical level with confirmation
 
 Note:
-- AVOID trading when there's low liquidity / low volume
-- AVOID trading if the provided data is incomplete
-- AVOID trading when there is a wide spread between bid/ask
+- AVOID trading when there's low liquidity/volume
+- AVOID trading if data is incomplete
+- AVOID trades needing >15 minutes to develop
+- REJECT entries with >0.5% bid-ask spread
 
 Response format:
 ((({
   "market_type": "[Trending/Ranging/Volatile/...]",
   "recommended_strategy": "[Exact strategy name from provided list]",
   "strategy_rationale": "Concise technical justification using 2-3 indicators",
-  
+
   "order_type": "buy/sell/null",
   "take_profit": [calculated numeric value],
   "stop_loss": [calculated numeric value],
@@ -99,8 +102,9 @@ Return '((({"no_trade": true})))' if:
 - Conflicting signals
 - Price between technical levels without clear edge
 - Not enough confirmation
-- There is low liquidity or volume
-- There is a wide spread between bid/ask
+- There is low liquidity/volume
+- Spread >0.5% of asset price
+- Setup requires >15min timeframe
 
 If we are avoiding a trade return ((({"no_trade": true})))
 `;
