@@ -1,8 +1,7 @@
 import dotenv from "dotenv";
 dotenv.config();
 
-import MetaApi from "metaapi.cloud-sdk/esm-node";
-import { SynchronizationListener } from "metaapi.cloud-sdk";
+import MetaApi, {SynchronizationListener} from "metaapi.cloud-sdk/esm-node";
 
 const token = process.env.META_API_CLOUD_TOKEN;
 const accountId = process.env.META_API_CLOUD_ACCOUNT_ID;
