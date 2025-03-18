@@ -2,9 +2,25 @@ import dotenv from "dotenv";
 dotenv.config();
 
 import MetaApi from "metaapi.cloud-sdk/esm-node";
+import {SynchronizationListener} from 'metaapi.cloud-sdk';
 
 const token = process.env.META_API_CLOUD_TOKEN;
 const accountId = process.env.META_API_CLOUD_ACCOUNT_ID;
+
+
+class MySynchronizationListener extends SynchronizationListener {
+  onDisconnected(instanceIndex) {
+    console.log(`Instance ${instanceIndex} disconnected`);
+  }
+
+  onBrokerConnectionStatusChanged(instanceIndex, connected) {
+    console.log(`Instance ${instanceIndex} broker connection status changed to ${connected}`);
+  }
+
+  onUnsubscribeRegion(region) {
+    console.log(`Unsubscribed from region ${region}`);
+  }
+}
 
 class MetaTradeApi {
   /**
@@ -292,6 +308,11 @@ class MetaTradeApi {
 
     if (!this.connection) {
       this.connection = this.account.getStreamingConnection();
+
+      // add listener
+      const listener = new MySynchronizationListener();
+      this.connection.addSynchronizationListener(listener);
+
       await this.connection.connect();
       await this.connection.waitSynchronized();
     }
