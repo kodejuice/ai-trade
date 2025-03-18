@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 dotenv.config();
 
-import MetaApi, {SynchronizationListener} from "metaapi.cloud-sdk/esm-node";
+import MetaApi, { SynchronizationListener } from "metaapi.cloud-sdk/esm-node";
 
 const token = process.env.META_API_CLOUD_TOKEN;
 const accountId = process.env.META_API_CLOUD_ACCOUNT_ID;
@@ -71,23 +71,18 @@ class MetaTradeApi {
   }
 
   /**
-   * @param {Object} param - Trade parameters
-   * @param {string} param.symbol - Trading symbol
-   * @param {string} param.tradeType - Type of trade ('scalp' or 'swing')
-   * @param {string} param.market_type - Type of market (e.g. 'Ranging Market')
-   * @param {string} param.recommended_strategy - Trading strategy to use
-   * @param {string} param.strategy_rationale - Explanation of strategy choice
-   * @param {string} param.order_type - Type of order ('buy' or 'sell')
-   * @param {number} param.take_profit - Take profit price level
-   * @param {number} param.stop_loss - Stop loss price level
-   * @param {Object} param.price - Current price object
-   * @param {number} param.price.bid - Bid price
-   * @param {number} param.price.ask - Ask price
-   * @param {number} param.stopsLevel - Stops level of the symbol
-   * @param {boolean} param.no_trade - Flag indicating whether to execute the trade
-   * @param {string} param.model - Model used for trade
-   * @param {number} param.spread - Spread of the symbol
-   * @param {number} param.minStopsLevelInPips - Minimum stops level in pips
+   * @typedef {Object} TradeParams
+   * @property {string} symbol - Trading symbol
+   * @property {string} tradeType - Type of trade ('scalp' or 'swing')
+   * @property {string} order_type - Type of order ('buy' or 'sell')
+   * @property {number} take_profit - Take profit price level
+   * @property {number} stop_loss - Stop loss price level
+   * @property {Object} price - Current price object with bid and ask
+   * @property {string} model - Model used for trade
+   */
+
+  /**
+   * @param {TradeParams} param
    */
   async openTrade(param) {
     if (param?.no_trade || !param?.take_profit || !param?.stop_loss) {
@@ -95,115 +90,72 @@ class MetaTradeApi {
     }
 
     try {
-      const { symbol, tradeType, order_type, model, stop_loss, take_profit } =
-        param;
+      const { symbol, tradeType, order_type, model, stop_loss, take_profit } = param;
+      console.log(`Opening [${order_type.toUpperCase()}] trade for ${symbol}...`);
 
-      console.log(
-        `Opening [${order_type.toUpperCase()}] trade for ${symbol}...`
-      );
       const connection = await this.getConnection();
-      const accountInfo = connection.terminalState.accountInformation; // {currency, balance, equity, margin, freeMargin, leverage, marginLevel}
+      const accountInfo = connection.terminalState.accountInformation;
       const symbolSpec = await this.getSpec(symbol);
 
       await connection.subscribeToMarketData(symbol);
+      await this.#logTradeDetails(param, accountInfo, symbolSpec);
 
-      // 1 volume of symbol = {spec.contractSize} of symbol
+      const volume = await this.#calculateTradeVolume(param, accountInfo, symbolSpec);
+      if (!volume) return;
 
-      console.log(tradeType);
-      console.log("LLM Model:", model);
-      console.log("Free margin:", accountInfo.freeMargin);
-      console.log("1% of free margin:", accountInfo.freeMargin / 100);
-      console.log(`> Take profit: ${param.take_profit}`);
-      console.log(`> Stop loss: ${param.stop_loss}`);
-      console.log(
-        `> [Spread: ${param.spread} || Stops level: ${param.minStopsLevelInPips}]`
-      );
-      console.log(`1 volume = ${symbolSpec.contractSize} ${symbol}`);
-      console.log(`|Ask price: ${symbolSpec.baseCurrency} ${param.price.ask}|`);
-      console.log(`|Bid price: ${symbolSpec.baseCurrency} ${param.price.bid}|`);
-
-      let tradeResp;
-      if (order_type == "buy") {
-        // how much volume can be bought with 1% of our free margin?
-        const amountPerTrade = accountInfo.freeMargin / 100;
-        const volume =
-          amountPerTrade / (param.price.bid * symbolSpec.contractSize);
-        const meetsMinVolume = volume >= symbolSpec.minVolume;
-        if (!meetsMinVolume) {
-          console.log(
-            `Volume buyable: ${volume} - NOT OK (< ${symbolSpec.minVolume}), exiting trade`
-          );
-          return;
-        }
-        const volumeInLots = Math.min(
-          symbolSpec.maxVolume,
-          Math.floor(volume * 100) / 100
-        );
-        // const volumeInLots = symbolSpec.minVolume;
-        console.log(`Volume buyable: ${volumeInLots}`);
-
-        tradeResp = await connection.createMarketBuyOrder(
-          symbol,
-          volumeInLots,
-          // null,
-          stop_loss,
-          take_profit,
-          {
-            comment: param.tradeType,
-            trailingStopLoss: {
-              distance: {
-                distance: 20,
-                units: "RELATIVE_POINTS",
-              },
-            },
-          }
-        );
-      } else if (param.order_type == "sell") {
-        // how much volume can be sold with 1% of our free margin?
-        const amountPerTrade = accountInfo.freeMargin / 100;
-        const volume =
-          amountPerTrade / (param.price.ask * symbolSpec.contractSize);
-        const meetsMinVolume = volume >= symbolSpec.minVolume;
-        if (!meetsMinVolume) {
-          console.log(
-            `Volume sellable: ${volume} - NOT OK (< ${symbolSpec.minVolume}), exiting trade`
-          );
-          return;
-        }
-        const volumeInLots = Math.min(
-          symbolSpec.maxVolume,
-          Math.floor(volume * 100) / 100
-        );
-        // const volumeInLots = symbolSpec.minVolume;
-        console.log(`Volume sellable: ${volumeInLots}`);
-
-        tradeResp = await connection.createMarketSellOrder(
-          symbol,
-          volumeInLots,
-          // null,
-          stop_loss,
-          take_profit,
-          {
-            comment: param.tradeType,
-            // clientId: `${tradeType}_${symbol}_${Date.now()}`,
-            trailingStopLoss: {
-              distance: {
-                distance: 20,
-                units: "RELATIVE_POINTS",
-              },
-            },
-          }
-        );
-      }
-
+      const tradeResp = await this.#executeTradeOrder(param, volume);
       console.log("Trade response:", tradeResp);
-
-      // await connection.unsubscribeFromMarketData(symbol);
     } catch (err) {
       console.error("Error opening trade:", err?.message);
     } finally {
       console.log("----\n");
     }
+  }
+
+  async #calculateTradeVolume(param, accountInfo, symbolSpec) {
+    const amountPerTrade = accountInfo.freeMargin / 100;
+    const price = param.order_type === "buy" ? param.price.ask : param.price.bid;
+    const volume = amountPerTrade / (price * symbolSpec.contractSize);
+
+    if (volume < symbolSpec.minVolume) {
+      console.log(`Volume: ${volume} - NOT OK (< ${symbolSpec.minVolume}), exiting trade`);
+      return null;
+    }
+
+    return Math.min(symbolSpec.maxVolume, Math.floor(volume * 100) / 100);
+  }
+
+  async #executeTradeOrder(param, volume) {
+    const { symbol, order_type, stop_loss, take_profit, tradeType } = param;
+    const tradeOptions = {
+      comment: tradeType,
+      trailingStopLoss: {
+        distance: { distance: 20, units: "RELATIVE_POINTS" }
+      }
+    };
+
+    console.log(`Volume ${order_type}able: ${volume}`);
+    const connection = await this.getConnection();
+
+    return order_type === "buy" 
+      ? connection.createMarketBuyOrder(symbol, volume, stop_loss, take_profit, tradeOptions)
+      : connection.createMarketSellOrder(symbol, volume, stop_loss, take_profit, tradeOptions);
+  }
+
+  async #logTradeDetails(param, accountInfo, symbolSpec) {
+    console.log({
+      tradeType: param.tradeType,
+      model: param.model,
+      freeMargin: accountInfo.freeMargin,
+      marginPercent: accountInfo.freeMargin / 100,
+      takeProfit: param.take_profit,
+      stopLoss: param.stop_loss,
+      spread: param.spread,
+      stopsLevel: param.minStopsLevelInPips,
+      contractSize: `${symbolSpec.contractSize} ${param.symbol}`,
+      askPrice: `${symbolSpec.baseCurrency} ${param.price.ask}`,
+      bidPrice: `${symbolSpec.baseCurrency} ${param.price.bid}`
+    });
   }
 
   /**
@@ -307,12 +259,14 @@ class MetaTradeApi {
 }
 
 class MySynchronizationListener extends SynchronizationListener {
+  #lastConnectionStatus = false;
+
   onConnected(instanceIndex, replicas) {
     console.log(`Instance ${instanceIndex} connected`);
   }
 
   onHealthStatus(instanceIndex, status) {
-    console.log(`Instance ${instanceIndex} health status changed to ${status}`);
+    // console.log(`Instance ${instanceIndex} health status changed to ${status}`);
   }
 
   onDisconnected(instanceIndex) {
@@ -320,9 +274,13 @@ class MySynchronizationListener extends SynchronizationListener {
   }
 
   onBrokerConnectionStatusChanged(instanceIndex, connected) {
+    if (this.#lastConnectionStatus === connected) {
+      return;
+    }
     console.log(
       `Instance ${instanceIndex} broker connection status changed to ${connected}`
     );
+    this.#lastConnectionStatus = connected;
   }
 
   onUnsubscribeRegion(region) {
