@@ -9,8 +9,13 @@ import { getLLMResponse } from "../helpers/llm/llm.js";
 
 const NoTradeObject = { no_trade: true };
 
+// Store prompt and response for analysis
+const LOG_PATH = `./tmp/trade-logs/${symbol}`;
+
 export class TradeParams {
   static async getTrade(symbol, tradeType = "scalp") {
+    this.cleanupOldLogs();
+
     try {
       const params =
         (await this._getTradeParams(symbol, tradeType)) || NoTradeObject;
@@ -91,8 +96,8 @@ export class TradeParams {
     let response = await getLLMResponse({
       systemPrompt,
       userPrompt,
-      platform: "groq",
-      // platform: "gemini",
+      // platform: "groq",
+      platform: "gemini",
     });
     const model = getGroqModel() || getGeminiModel() || "gpt";
     const params = await this.extractTradeParamsFromResponse(response);
@@ -113,7 +118,6 @@ export class TradeParams {
       response,
       model,
     });
-
 
     params.tradeType = tradeType;
     params.symbol = symbol;
@@ -173,8 +177,7 @@ Return valid JSON.`;
   }
 
   static async logTrade({ symbol, tradeType, userPrompt, response, model }) {
-    // Store prompt and response for analysis
-    const logPath = `./tmp/trade-logs/${symbol}`;
+    const logPath = LOG_PATH;
 
     // Ensure log directory exists
     await fs.mkdir(logPath, { recursive: true });
@@ -191,20 +194,37 @@ prompt: ${userPrompt}
 
 response: ${response}`;
 
-    await fs.writeFile(
-      `${logPath}/${tradeType}-${Date.now()}.txt`,
-      logData
-    );
+    await fs.writeFile(`${logPath}/${tradeType}-${Date.now()}.txt`, logData);
+    this.cleanupOldLogs(logPath);
+  }
 
-    // loop over files in log directory and delete old files
-    // read time from filename
-    const files = await fs.readdir(logPath, {recursive: true});
+  static async cleanupOldLogs() {
+    // Store prompt and response for analysis
+    const logPath = LOG_PATH;
+
     // Keep only files from the last 3 hours
+    const files = await fs.readdir(logPath, { recursive: true });
     const _3hrs = Date.now() - 3 * 60 * 60 * 1000;
+
     for (const file of files) {
       const timestamp = parseInt(file.split("-").pop().replace(".txt", ""));
       if (timestamp < _3hrs) {
         await fs.unlink(`${logPath}/${file}`);
+      }
+    }
+
+    // delete empty dirs
+    const dirs = await fs.readdir(logPath, {
+      withFileTypes: true,
+      recursive: true,
+    });
+    for (const dir of dirs) {
+      if (dir.isDirectory()) {
+        const dirPath = `${logPath}/${dir.name}`;
+        const files = await fs.readdir(dirPath);
+        if (files.length === 0) {
+          await fs.rmdir(dirPath);
+        }
       }
     }
   }
