@@ -126,14 +126,17 @@ export async function getFullTickerData(symbol, tradeType = "swing") {
       };
     });
 
-    data["quotes"] = [
-      ...Q.slice(-42, -35), // show data from 42 to 35 points ago
-      // ...Q.slice(-35, -28), // hidden: data from 35 to 28 points ago
-      ...Q.slice(-28, -21), // show data from 28 to 21 points ago
-      // ...Q.slice(-21, -14), // hidden: data from 21 to 14 points ago
-      ...Q.slice(-14), // show most recent 14 points of data
-    ];
-    // console.log("len", data["quotes"].length); // => 28
+    if (tradeType === "swing") {
+      data["quotes"] = [
+        ...Q.slice(-42, -35), // show data from 42 to 35 points ago
+        // ...Q.slice(-35, -28), // hidden: data from 35 to 28 points ago
+        ...Q.slice(-28, -21), // show data from 28 to 21 points ago
+        // ...Q.slice(-21, -14), // hidden: data from 21 to 14 points ago
+        ...Q.slice(-14), // show most recent 14 points of data
+      ];
+    } else if (tradeType === "scalp") {
+      data["quotes"] = Q.slice(-14); // show only most recent 14 points for scalping
+    }
 
     return data;
   } catch (err) {
