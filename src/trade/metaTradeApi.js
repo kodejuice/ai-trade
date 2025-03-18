@@ -2,25 +2,10 @@ import dotenv from "dotenv";
 dotenv.config();
 
 import MetaApi from "metaapi.cloud-sdk/esm-node";
-import {SynchronizationListener} from 'metaapi.cloud-sdk';
+import { SynchronizationListener } from "metaapi.cloud-sdk";
 
 const token = process.env.META_API_CLOUD_TOKEN;
 const accountId = process.env.META_API_CLOUD_ACCOUNT_ID;
-
-
-class MySynchronizationListener extends SynchronizationListener {
-  onDisconnected(instanceIndex) {
-    console.log(`Instance ${instanceIndex} disconnected`);
-  }
-
-  onBrokerConnectionStatusChanged(instanceIndex, connected) {
-    console.log(`Instance ${instanceIndex} broker connection status changed to ${connected}`);
-  }
-
-  onUnsubscribeRegion(region) {
-    console.log(`Unsubscribed from region ${region}`);
-  }
-}
 
 class MetaTradeApi {
   /**
@@ -244,7 +229,8 @@ class MetaTradeApi {
     try {
       const stopsLevelPadding = 1; // 1 pip
       const { stopsLevel, digits } = await metaTradeAPI.getSpec(symbol);
-      const minStopsLevelInPips = (stopsLevel + stopsLevelPadding) / Math.pow(10, digits);
+      const minStopsLevelInPips =
+        (stopsLevel + stopsLevelPadding) / Math.pow(10, digits);
 
       const { bid, ask } = await metaTradeAPI.getPrice(symbol);
       const spread = Math.abs(ask - bid);
@@ -252,7 +238,7 @@ class MetaTradeApi {
 
       this.#stopsDistanceCache.set(symbol, {
         value: result,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
 
       return result;
@@ -321,31 +307,28 @@ class MetaTradeApi {
   }
 }
 
+class MySynchronizationListener extends SynchronizationListener {
+  onConnected(instanceIndex, replicas) {
+    console.log(`Instance ${instanceIndex} connected`);
+  }
+
+  onHealthStatus(instanceIndex, status) {
+    console.log(`Instance ${instanceIndex} health status changed to ${status}`);
+  }
+
+  onDisconnected(instanceIndex) {
+    console.log(`Instance ${instanceIndex} disconnected`);
+  }
+
+  onBrokerConnectionStatusChanged(instanceIndex, connected) {
+    console.log(
+      `Instance ${instanceIndex} broker connection status changed to ${connected}`
+    );
+  }
+
+  onUnsubscribeRegion(region) {
+    console.log(`Unsubscribed from region ${region}`);
+  }
+}
+
 export const metaTradeAPI = new MetaTradeApi(token);
-
-/*
-  // get accounts
-  const accounts = await api.metatraderAccountApi.getAccountsWithInfiniteScrollPagination({
-    state: 'DEPLOYED',
-  });
-  const account = accounts.find(account => account.id === 'c82a1111-99e3-47c1-844c-d8348c02ab8f')
-
-  // real-time
-  const connection = account.getStreamingConnection();
-  await connection.connect();
-
-  // access local copy of terminal state
-  const terminalState = connection.terminalState;
-
-  // wait until synchronization completed
-  await connection.waitSynchronized();
-
-  // console.log(terminalState.connected);
-  // console.log(terminalState.connectedToBroker);
-  // console.log(terminalState.positions); [...]
-  console.log(terminalState.price('BCHUSD'));
-
-  connection.close();
-*/
-
-// 329 => 341
