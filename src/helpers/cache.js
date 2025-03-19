@@ -53,7 +53,9 @@ const REDIS_CONFIG = () => ({
   socket: {
     reconnectStrategy: (retries) => {
       if (retries > 3) {
-        console.warn("Redis connection failed after multiple retries, disabling Redis");
+        console.warn(
+          "Redis connection failed after multiple retries, disabling Redis"
+        );
         return false;
       }
       return Math.min(retries * 100, 3000);
@@ -65,13 +67,14 @@ const REDIS_CONFIG = () => ({
 let redisEnabled = true;
 async function getRedisClient() {
   if (!redisEnabled) {
-    // Reset redisEnabled after 30 minutes
-    setTimeout(() => {
+    const thirtyMinutes = 30 * 60 * 1000;
+    if (Date.now() - (global.lastRedisFailure || 0) > thirtyMinutes) {
       redisEnabled = true;
-    }, 30 * 60 * 1000);
-    return null;
+      global.lastRedisFailure = Date.now();
+    }
+    if (!redisEnabled) return null;
   }
-  
+
   if (!redisClient) {
     try {
       redisClient = createClient(REDIS_CONFIG());
@@ -92,7 +95,11 @@ async function getRedisClient() {
 }
 
 // Cache operations
-export async function getCachedResult(key, fetchDataFn, expirationSeconds = 780) {
+export async function getCachedResult(
+  key,
+  fetchDataFn,
+  expirationSeconds = 780
+) {
   try {
     // Check LRU cache first
     const lruValue = lruCache.get(key);
@@ -108,7 +115,7 @@ export async function getCachedResult(key, fetchDataFn, expirationSeconds = 780)
           return parsedValue;
         }
       } catch (error) {
-        console.warn("Redis get operation failed:", error);
+        console.warn("Redis get operation failed");
         redisEnabled = false;
       }
     }
@@ -116,15 +123,16 @@ export async function getCachedResult(key, fetchDataFn, expirationSeconds = 780)
     // Fallback to fetching fresh data
     const value = await fetchDataFn();
     lruCache.put(key, value);
-    
+
     if (client) {
-      await client.set(key, JSON.stringify(value), { EX: expirationSeconds })
-        .catch(error => console.warn("Redis set operation failed:", error));
+      await client
+        .set(key, JSON.stringify(value), { EX: expirationSeconds })
+        .catch((error) => console.warn("Redis set operation failed"));
     }
-    
+
     return value;
   } catch (error) {
-    console.error("Cache error:", error);
+    console.error("Cache error");
     return await fetchDataFn();
   }
 }
@@ -133,8 +141,9 @@ export async function setCachedResult(key, value, expirationSeconds = 780) {
   lruCache.put(key, value);
   const client = await getRedisClient();
   if (client) {
-    await client.set(key, JSON.stringify(value), { EX: expirationSeconds })
-      .catch(error => console.warn("Redis set operation failed:", error));
+    await client
+      .set(key, JSON.stringify(value), { EX: expirationSeconds })
+      .catch((error) => console.warn("Redis set operation failed:", error));
   }
 }
 
@@ -142,7 +151,8 @@ export async function invalidateCache(key) {
   lruCache.remove(key);
   const client = await getRedisClient();
   if (client) {
-    await client.del(key)
-      .catch(error => console.warn("Redis delete operation failed:", error));
+    await client
+      .del(key)
+      .catch((error) => console.warn("Redis delete operation failed:", error));
   }
 }
