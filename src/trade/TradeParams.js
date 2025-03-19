@@ -217,8 +217,9 @@ prompt: ${userPrompt}
 
 response: ${response}`;
 
+    const fname = `${tradeType}-${Date.now()}`;
     await fs.writeFile(
-      `${logPath}/${symbol}/${tradeType}-${Date.now()}.txt`,
+      `${logPath}/${symbol}/${fname}.txt`,
       logData
     );
     this.cleanupOldLogs(logPath);
@@ -230,11 +231,11 @@ response: ${response}`;
 
     // Keep only files from the last 3 hours
     const files = await fs.readdir(logPath, { recursive: true });
-    const _3hrs = Date.now() - 3 * 60 * 60 * 1000;
+    const maxTime = Date.now() - 7 * 60 * 60 * 1000; // 7 hours ago
 
     for (const file of files) {
       const timestamp = parseInt(file.split("-").pop().replace(".txt", ""));
-      if (timestamp < _3hrs) {
+      if (timestamp < maxTime) {
         await fs.unlink(`${logPath}/${file}`);
       }
     }
