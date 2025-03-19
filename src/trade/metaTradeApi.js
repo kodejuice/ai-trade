@@ -90,8 +90,11 @@ class MetaTradeApi {
     }
 
     try {
-      const { symbol, tradeType, order_type, model, stop_loss, take_profit } = param;
-      console.log(`Opening [${order_type.toUpperCase()}] trade for ${symbol}...`);
+      const { symbol, tradeType, order_type, model, stop_loss, take_profit } =
+        param;
+      console.log(
+        `Opening [${order_type.toUpperCase()}] trade for ${symbol}...`
+      );
 
       const connection = await this.getConnection();
       const accountInfo = connection.terminalState.accountInformation;
@@ -100,7 +103,11 @@ class MetaTradeApi {
       await connection.subscribeToMarketData(symbol);
       await this.#logTradeDetails(param, accountInfo, symbolSpec);
 
-      const volume = await this.#calculateTradeVolume(param, accountInfo, symbolSpec);
+      const volume = await this.#calculateTradeVolume(
+        param,
+        accountInfo,
+        symbolSpec
+      );
       if (!volume) return;
 
       const tradeResp = await this.#executeTradeOrder(param, volume);
@@ -115,15 +122,19 @@ class MetaTradeApi {
 
   async #calculateTradeVolume(param, accountInfo, symbolSpec) {
     const amountPerTrade = accountInfo.freeMargin / 100;
-    const price = param.order_type === "buy" ? param.price.ask : param.price.bid;
+    const price =
+      param.order_type === "buy" ? param.price.ask : param.price.bid;
     const volume = amountPerTrade / (price * symbolSpec.contractSize);
 
     if (volume < symbolSpec.minVolume) {
-      console.log(`Volume: ${volume} - NOT OK (< ${symbolSpec.minVolume}), exiting trade`);
+      console.log(
+        `Volume: ${volume} - NOT OK (< ${symbolSpec.minVolume}), exiting trade`
+      );
       return null;
     }
 
-    return Math.min(symbolSpec.maxVolume, Math.floor(volume * 100) / 100);
+    const vol = Math.min(symbolSpec.maxVolume, Math.floor(volume * 100) / 100);
+    return Math.max(symbolSpec.minVolume, vol / 7);
   }
 
   async #executeTradeOrder(param, volume) {
@@ -131,16 +142,28 @@ class MetaTradeApi {
     const tradeOptions = {
       comment: tradeType,
       trailingStopLoss: {
-        distance: { distance: 20, units: "RELATIVE_POINTS" }
-      }
+        distance: { distance: 20, units: "RELATIVE_POINTS" },
+      },
     };
 
     console.log(`Volume ${order_type}able: ${volume}`);
     const connection = await this.getConnection();
 
-    return order_type === "buy" 
-      ? connection.createMarketBuyOrder(symbol, volume, stop_loss, take_profit, tradeOptions)
-      : connection.createMarketSellOrder(symbol, volume, stop_loss, take_profit, tradeOptions);
+    return order_type === "buy"
+      ? connection.createMarketBuyOrder(
+          symbol,
+          volume,
+          stop_loss,
+          take_profit,
+          tradeOptions
+        )
+      : connection.createMarketSellOrder(
+          symbol,
+          volume,
+          stop_loss,
+          take_profit,
+          tradeOptions
+        );
   }
 
   async #logTradeDetails(param, accountInfo, symbolSpec) {
@@ -155,7 +178,7 @@ class MetaTradeApi {
       stopsLevel: param.minStopsLevelInPips,
       contractSize: `${symbolSpec.contractSize} ${param.symbol}`,
       askPrice: `${symbolSpec.baseCurrency} ${param.price.ask}`,
-      bidPrice: `${symbolSpec.baseCurrency} ${param.price.bid}`
+      bidPrice: `${symbolSpec.baseCurrency} ${param.price.bid}`,
     });
   }
 
