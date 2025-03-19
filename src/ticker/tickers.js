@@ -245,5 +245,6 @@ export const getAllTickers = () => {
     ...SYMBOLS.stocks.us,
     ...SYMBOLS.stocks.japan,
   ];
-  return tickers.sort(() => Math.random() - 0.5);
+  return tickers;
+  // return tickers.sort(() => Math.random() - 0.5);
 };

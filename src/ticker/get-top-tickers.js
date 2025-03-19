@@ -21,7 +21,6 @@ export const getTopTickers = async (tradeType = "scalp", n = 7, log = true) => {
   //   );
   // }
 
-  tradableTickers.sort(() => Math.random() - 0.5); // shuffle
   return tradableTickers;
 };
 
