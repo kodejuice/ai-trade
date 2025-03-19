@@ -55,7 +55,7 @@ export class TradeParams {
       // update stop levels to be minimum possible
       if (params.order_type == "buy") {
         const minStopLoss = bid - minDistanceForStopLoss;
-        const minTakeProfit = bid + (minDistanceForStopLoss * RewardFactor);
+        const minTakeProfit = bid + minDistanceForStopLoss * RewardFactor;
 
         params.stop_loss = minStopLoss;
         params.take_profit = minTakeProfit;
@@ -63,7 +63,7 @@ export class TradeParams {
         // if (params.take_profit < minTakeProfit) params.take_profit = minTakeProfit;
       } else if (params.order_type == "sell") {
         const minStopLoss = ask + minDistanceForStopLoss;
-        const minTakeProfit = ask - (minDistanceForStopLoss * RewardFactor);
+        const minTakeProfit = ask - minDistanceForStopLoss * RewardFactor;
 
         params.stop_loss = minStopLoss;
         params.take_profit = minTakeProfit;
@@ -218,10 +218,7 @@ prompt: ${userPrompt}
 response: ${response}`;
 
     const fname = `${tradeType}-${Date.now()}`;
-    await fs.writeFile(
-      `${logPath}/${symbol}/${fname}.txt`,
-      logData
-    );
+    await fs.writeFile(`${logPath}/${symbol}/${fname}.txt`, logData);
     this.cleanupOldLogs(logPath);
   }
 
@@ -234,6 +231,15 @@ response: ${response}`;
     const maxTime = Date.now() - 7 * 60 * 60 * 1000; // 7 hours ago
 
     for (const file of files) {
+      const dirName = file.split("/")[1];
+      if (
+        dirName &&
+        (await metaTradeAPI.getPositionsBySymbol(dirName)).length
+      ) {
+        // if there are any positions for this symbol, don't delete the dir
+        continue;
+      }
+
       const timestamp = parseInt(file.split("-").pop().replace(".txt", ""));
       if (timestamp < maxTime) {
         await fs.unlink(`${logPath}/${file}`);
