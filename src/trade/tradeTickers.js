@@ -7,11 +7,11 @@ export const getTickersForTrading = async (tradeType) => {
 
   // sort by stops distance
   // so symbols with the lowest (stops distance + spread) are at the top
-  await mergeSort(tickers, async (sym1, sym2) => {
-    const stopsDist1 = await metaTradeAPI.getStopsDistance(sym1);
-    const stopsDist2 = await metaTradeAPI.getStopsDistance(sym2);
-    return stopsDist1 - stopsDist2;
-  });
+  // await mergeSort(tickers, async (sym1, sym2) => {
+  //   const stopsDist1 = await metaTradeAPI.getStopsDistance(sym1);
+  //   const stopsDist2 = await metaTradeAPI.getStopsDistance(sym2);
+  //   return stopsDist1 - stopsDist2;
+  // });
 
   // return first 47% of the tickers
   const T = tickers.slice(0, Math.floor(tickers.length * 0.47));
