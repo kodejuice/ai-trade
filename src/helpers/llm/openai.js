@@ -1,6 +1,13 @@
 import OpenAI from "openai";
 import { waitFor } from "../util.js";
 
+
+let lastModelUsed = null;
+
+export function getOpenAIModel() {
+  return lastModelUsed;
+}
+
 export const getOpenAIReponse = async ({
   systemPrompt,
   userPrompt,
@@ -25,7 +32,7 @@ export const getOpenAIReponse = async ({
       frequency_penalty: 0,
       presence_penalty: 0,
     });
-
+    lastModelUsed = model;
     return completion.choices[0].message.content;
   } catch (error) {
     if (`${error}`.includes(" (TPM): Limit")) {
@@ -41,6 +48,7 @@ export const getOpenAIReponse = async ({
     }
 
     console.error("Error getting chat response:", `${error}`);
+    lastModelUsed = null;
     return "N/A";
   }
 };
