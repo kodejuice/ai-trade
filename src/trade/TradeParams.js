@@ -40,7 +40,7 @@ export class TradeParams {
       params.take_profit = extractAmountFromText(`${params.take_profit}`);
 
       const { stopsLevel, digits } = await metaTradeAPI.getSpec(symbol);
-      const minStopsLevelInPips = (stopsLevel + 2) / Math.pow(10, digits);
+      const minStopsLevelInPips = (stopsLevel + 3) / Math.pow(10, digits);
 
       const { bid, ask } = await metaTradeAPI.getPrice(symbol);
       const spread = Math.abs(ask - bid);
@@ -55,18 +55,18 @@ export class TradeParams {
       // update stop levels to be minimum possible
       if (params.order_type == "buy") {
         const minStopLoss = bid - minDistanceForStopLoss;
-        const minTakeProfit = bid + minDistanceForStopLoss;
+        const minTakeProfit = bid + (minDistanceForStopLoss * RewardFactor);
 
         params.stop_loss = minStopLoss;
-        params.take_profit = minTakeProfit * RewardFactor;
+        params.take_profit = minTakeProfit;
         // if (params.stop_loss > minStopLoss) params.stop_loss = minStopLoss;
         // if (params.take_profit < minTakeProfit) params.take_profit = minTakeProfit;
       } else if (params.order_type == "sell") {
         const minStopLoss = ask + minDistanceForStopLoss;
-        const minTakeProfit = ask - minDistanceForStopLoss;
+        const minTakeProfit = ask - (minDistanceForStopLoss * RewardFactor);
 
         params.stop_loss = minStopLoss;
-        params.take_profit = minTakeProfit * RewardFactor;
+        params.take_profit = minTakeProfit;
         // if (params.stop_loss < minStopLoss) params.stop_loss = minStopLoss;
         // if (params.take_profit > minTakeProfit) params.take_profit = minTakeProfit;
       }
@@ -115,7 +115,7 @@ export class TradeParams {
     });
 
     return {
-      ...firstParams,
+      ...secondParams,
       tradeType,
       symbol,
       model,
@@ -131,7 +131,7 @@ export class TradeParams {
     const model = this._getModelForPlatform(platform);
     const params = await this.extractTradeParamsFromResponse(response);
 
-    return { ...params, model, response };
+    return { ...params, model };
   }
 
   static _getModelForPlatform(platform) {
