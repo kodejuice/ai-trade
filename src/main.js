@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 dotenv.config();
 
-import { TradeParams } from "./trade/tradeParams.js";
+import { TradeParams } from "./trade/TradeParams.js";
 import { metaTradeAPI } from "./trade/metaTradeApi.js";
 import { waitFor } from "./helpers/util.js";
 import { getTickersForTrading } from "./trade/tradeTickers.js";
