@@ -107,6 +107,8 @@ Return '((({"no_trade": true})))' if:
 - Setup requires >15min timeframe
 
 If we are avoiding a trade return ((({"no_trade": true})))
+
+Do a deep dive analysis before returning a JSON response
 `;
   }
 
@@ -190,6 +192,8 @@ Reject trades '((({"no_trade": true})))' if:
 - There is low liquidity or volume
 
 If we are avoiding a trade return ((({"no_trade": true})))
+
+Do a deep dive analysis before returning a JSON response
 `;
   }
 
