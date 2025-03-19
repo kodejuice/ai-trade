@@ -226,6 +226,9 @@ response: ${response}`;
     // Store prompt and response for analysis
     const logPath = LOG_PATH;
 
+    // Ensure log directory exists
+    await fs.mkdir(logPath, { recursive: true });
+
     // Keep only files from the last 3 hours
     const files = await fs.readdir(logPath, { recursive: true });
     const maxTime = Date.now() - 7 * 60 * 60 * 1000; // 7 hours ago
