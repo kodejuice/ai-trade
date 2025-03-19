@@ -6,11 +6,12 @@ import { metaTradeAPI } from "./metaTradeApi.js";
 import { TradePromptGenerator } from "./Prompt.js";
 import { extractAmountFromText } from "../helpers/util.js";
 import { getLLMResponse } from "../helpers/llm/llm.js";
+import { getOpenAIModel } from "../helpers/llm/openai.js";
 
 const NoTradeObject = { no_trade: true };
 
 // Store prompt and response for analysis
-const LOG_PATH = `./tmp/trade-logs/${symbol}`;
+const LOG_PATH = `./tmp/trade-logs/`;
 
 export class TradeParams {
   static async getTrade(symbol, tradeType = "scalp") {
@@ -35,12 +36,11 @@ export class TradeParams {
 
   static async adjustTradeParams(params, symbol) {
     if (params.stop_loss) {
-      // update minimal distance from the current market price to stops price
       params.stop_loss = extractAmountFromText(`${params.stop_loss}`);
       params.take_profit = extractAmountFromText(`${params.take_profit}`);
 
       const { stopsLevel, digits } = await metaTradeAPI.getSpec(symbol);
-      const minStopsLevelInPips = (stopsLevel + 3) / Math.pow(10, digits);
+      const minStopsLevelInPips = (stopsLevel + 2) / Math.pow(10, digits);
 
       const { bid, ask } = await metaTradeAPI.getPrice(symbol);
       const spread = Math.abs(ask - bid);
@@ -50,32 +50,25 @@ export class TradeParams {
 
       const minDistanceForStopLoss = minStopsLevelInPips + spread;
 
+      const RewardFactor = 1.5;
+
+      // update stop levels to be minimum possible
       if (params.order_type == "buy") {
         const minStopLoss = bid - minDistanceForStopLoss;
         const minTakeProfit = bid + minDistanceForStopLoss;
 
-        // params.adjusted_stop_loss = Math.min(params.stop_loss, minStopLoss);
-        if (params.stop_loss > minStopLoss) {
-          params.stop_loss = minStopLoss;
-        }
-
-        // params.adjusted_take_profit = Math.max(params.take_profit, minTakeProfit);
-        if (params.take_profit < minTakeProfit) {
-          params.take_profit = minTakeProfit;
-        }
+        params.stop_loss = minStopLoss;
+        params.take_profit = minTakeProfit * RewardFactor;
+        // if (params.stop_loss > minStopLoss) params.stop_loss = minStopLoss;
+        // if (params.take_profit < minTakeProfit) params.take_profit = minTakeProfit;
       } else if (params.order_type == "sell") {
         const minStopLoss = ask + minDistanceForStopLoss;
         const minTakeProfit = ask - minDistanceForStopLoss;
 
-        // params.adjusted_stop_loss = Math.max(params.stop_loss, minStopLoss);
-        if (params.stop_loss < minStopLoss) {
-          params.stop_loss = minStopLoss;
-        }
-
-        // params.adjusted_take_profit = Math.min(params.take_profit, minTakeProfit);
-        if (params.take_profit > minTakeProfit) {
-          params.take_profit = minTakeProfit;
-        }
+        params.stop_loss = minStopLoss;
+        params.take_profit = minTakeProfit * RewardFactor;
+        // if (params.stop_loss < minStopLoss) params.stop_loss = minStopLoss;
+        // if (params.take_profit > minTakeProfit) params.take_profit = minTakeProfit;
       }
       params.price = { bid, ask };
 
@@ -83,47 +76,77 @@ export class TradeParams {
       params.stopsLevel = stopsLevel.toFixed(digits);
       params.take_profit = +params.take_profit.toFixed(digits);
       params.stop_loss = +params.stop_loss.toFixed(digits);
-      // params.take_profit = Math.floor(params.take_profit * 100) / 100;
-      // params.stop_loss = Math.floor(params.stop_loss * 100) / 100;
     }
     console.log(`<< ${symbol} -> ${JSON.stringify(params)}>>`);
   }
 
   static async _getTradeParams(symbol, tradeType = "scalp") {
     const systemPrompt = TradePromptGenerator.getSystemPrompt(tradeType);
+    const userPrompt = await TradePromptGenerator.getPrompt(symbol, tradeType);
 
-    let userPrompt = await TradePromptGenerator.getPrompt(symbol, tradeType);
-    let response = await getLLMResponse({
+    // Get trade params from two different LLM platforms for confirmation
+    const firstParams = await this._getLLMTradeParams(
       systemPrompt,
       userPrompt,
-      // platform: "groq",
-      platform: "gemini",
-    });
-    const model = getGroqModel() || getGeminiModel() || "gpt";
-    const params = await this.extractTradeParamsFromResponse(response);
+      "gemini"
+    );
+    if (!this._isValidTradeParams(firstParams)) return null;
 
+    const secondParams = await this._getLLMTradeParams(
+      systemPrompt,
+      userPrompt,
+      "groq"
+    );
     if (
-      !params ||
-      params.no_trade == true ||
-      !["buy", "sell"].includes(params.order_type) ||
-      !(params.confidence_score >= 6.5)
+      !this._isValidTradeParams(secondParams) ||
+      secondParams.order_type !== firstParams.order_type
     ) {
       return null;
     }
 
-    this.logTrade({
+    // Log the successful trade parameters
+    const model = `${firstParams.model} -> ${secondParams.model}`;
+    await this.logTrade({
       symbol,
       tradeType,
       userPrompt,
-      response,
+      response: secondParams.response,
       model,
     });
 
-    params.tradeType = tradeType;
-    params.symbol = symbol;
-    params.model = model;
+    return {
+      ...firstParams,
+      tradeType,
+      symbol,
+      model,
+    };
+  }
 
-    return params;
+  static async _getLLMTradeParams(systemPrompt, userPrompt, platform) {
+    const response = await getLLMResponse({
+      systemPrompt,
+      userPrompt,
+      platform,
+    });
+    const model = this._getModelForPlatform(platform);
+    const params = await this.extractTradeParamsFromResponse(response);
+
+    return { ...params, model, response };
+  }
+
+  static _getModelForPlatform(platform) {
+    if (platform === "gemini")
+      return getGeminiModel() || getOpenAIModel() || getGroqModel();
+    return getGroqModel() || getGeminiModel() || getOpenAIModel();
+  }
+
+  static _isValidTradeParams(params) {
+    if (!params) return false;
+    return (
+      !params.no_trade &&
+      ["buy", "sell"].includes(params.order_type) &&
+      params.confidence_score >= 7
+    );
   }
 
   static async extractTradeParamsFromResponse(response) {
@@ -171,7 +194,6 @@ Return valid JSON.`;
     try {
       return JSON.parse(match[1]);
     } catch (error) {
-      // console.log("error extracting params, ", `"...${result.slice(-150)}"`);
       return null;
     }
   }
@@ -180,9 +202,9 @@ Return valid JSON.`;
     const logPath = LOG_PATH;
 
     // Ensure log directory exists
-    await fs.mkdir(logPath, { recursive: true });
+    await fs.mkdir(`${logPath}/${symbol}`, { recursive: true });
 
-    const logData = `timestamp: ${new Date().toISOString()},
+    const logData = `timestamp: ${new Date().toString()},
 symbol: ${symbol}
 tradeType: ${tradeType}
 model: ${model}
@@ -194,7 +216,10 @@ prompt: ${userPrompt}
 
 response: ${response}`;
 
-    await fs.writeFile(`${logPath}/${tradeType}-${Date.now()}.txt`, logData);
+    await fs.writeFile(
+      `${logPath}/${symbol}/${tradeType}-${Date.now()}.txt`,
+      logData
+    );
     this.cleanupOldLogs(logPath);
   }
 
