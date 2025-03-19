@@ -160,7 +160,8 @@ The response should contain a JSON object with the following format:
 {
   "order_type": "buy" or "sell",
   "take_profit": number,
-  "stop_loss": number
+  "stop_loss": number,
+  ...
 } OR {"no_trade": true}`;
 
     const userPrompt = `Extract the trade parameters from this response:
