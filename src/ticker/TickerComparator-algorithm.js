@@ -11,13 +11,13 @@ export class TickerComparator {
     const data1 = await getCachedResult(
       `ai-trade-preview-${ticker1}`,
       () => getTickerPreview(t1),
-      60 * 60 * 1 // 1 hour
+      60 * 60 * 24 * 3 // 3 days
     );
 
     const data2 = await getCachedResult(
       `ai-trade-preview-${ticker2}`,
       () => getTickerPreview(t2),
-      60 * 60 * 1
+      60 * 60 * 24 * 3
     );
 
     if (tradeType === "scalp") {
