@@ -133,8 +133,9 @@ class MetaTradeApi {
       return null;
     }
 
-    const vol = Math.min(symbolSpec.maxVolume, Math.floor(volume * 100) / 100);
-    return Math.max(symbolSpec.minVolume, vol / 7);
+    let vol = Math.min(symbolSpec.maxVolume, Math.floor(volume * 100) / 100);
+    vol = Math.floor((vol / 7) * 100) / 100;
+    return Math.max(symbolSpec.minVolume, vol);
   }
 
   async #executeTradeOrder(param, volume) {
