@@ -83,7 +83,6 @@ Produce JSON response with:
 Note:
 - AVOID trading when there's low liquidity/volume
 - AVOID trading if data is incomplete
-- AVOID trades needing >15 minutes to develop
 - REJECT entries with >0.5% bid-ask spread
 
 Response format:
@@ -104,7 +103,6 @@ Return '((({"no_trade": true})))' if:
 - Not enough confirmation
 - There is low liquidity/volume
 - Spread >0.5% of asset price
-- Setup requires >15min timeframe
 
 If we are avoiding a trade return ((({"no_trade": true})))
 

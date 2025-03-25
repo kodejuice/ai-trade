@@ -11,7 +11,7 @@ import { getOpenAIModel } from "../helpers/llm/openai.js";
 const NoTradeObject = { no_trade: true };
 
 // Store prompt and response for analysis
-const LOG_PATH = `./tmp/trade-logs/`;
+const LOG_PATH = `./tmp/trade-logs`;
 
 export class TradeParams {
   static async getTrade(symbol, tradeType = "scalp") {
@@ -50,25 +50,34 @@ export class TradeParams {
 
       const minDistanceForStopLoss = minStopsLevelInPips + spread;
 
-      const RewardFactor = 1.5;
-
-      // update stop levels to be minimum possible
       if (params.order_type == "buy") {
         const minStopLoss = bid - minDistanceForStopLoss;
-        const minTakeProfit = bid + minDistanceForStopLoss * RewardFactor;
+        const minTakeProfit = bid + minDistanceForStopLoss;
 
-        params.stop_loss = minStopLoss;
-        params.take_profit = minTakeProfit;
-        // if (params.stop_loss > minStopLoss) params.stop_loss = minStopLoss;
-        // if (params.take_profit < minTakeProfit) params.take_profit = minTakeProfit;
+        if (params.stop_loss > minStopLoss) params.stop_loss = minStopLoss;
+        if (params.take_profit < minTakeProfit) params.take_profit = minTakeProfit;
+
+        // Ensure risk:reward ratio of at least 1:2
+        const riskDistance = Math.abs(bid - params.stop_loss);
+        const minRewardDistance = riskDistance * 2;
+        const requiredTakeProfit = bid + minRewardDistance;
+        if (params.take_profit < requiredTakeProfit) {
+          params.take_profit = requiredTakeProfit;
+        }
       } else if (params.order_type == "sell") {
         const minStopLoss = ask + minDistanceForStopLoss;
-        const minTakeProfit = ask - minDistanceForStopLoss * RewardFactor;
+        const minTakeProfit = ask - minDistanceForStopLoss;
 
-        params.stop_loss = minStopLoss;
-        params.take_profit = minTakeProfit;
-        // if (params.stop_loss < minStopLoss) params.stop_loss = minStopLoss;
-        // if (params.take_profit > minTakeProfit) params.take_profit = minTakeProfit;
+        if (params.stop_loss < minStopLoss) params.stop_loss = minStopLoss;
+        if (params.take_profit > minTakeProfit) params.take_profit = minTakeProfit;
+
+        // Ensure risk:reward ratio of at least 1:2
+        const riskDistance = Math.abs(ask - params.stop_loss);
+        const minRewardDistance = riskDistance * 2;
+        const requiredTakeProfit = ask - minRewardDistance;
+        if (params.take_profit > requiredTakeProfit) {
+          params.take_profit = requiredTakeProfit;
+        }
       }
       params.price = { bid, ask };
 

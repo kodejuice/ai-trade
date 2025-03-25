@@ -135,7 +135,7 @@ export async function getFullTickerData(symbol, tradeType = "swing") {
         ...Q.slice(-14), // show most recent 14 points of data
       ];
     } else if (tradeType === "scalp") {
-      data["quotes"] = Q.slice(-14); // show only most recent 14 points for scalping
+      data["quotes"] = Q.slice(-19); // show only most recent 19 points for scalping
     }
 
     return data;
