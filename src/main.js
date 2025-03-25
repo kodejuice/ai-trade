@@ -32,7 +32,7 @@ async function placeTrades(tradeType, maxTrades = null) {
     trades++;
     if (maxTrades && trades >= maxTrades) break;
 
-    await waitFor(15);
+    await waitFor(3);
   }
 }
 
