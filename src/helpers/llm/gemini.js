@@ -3,12 +3,11 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { getOpenAIReponse } from "./openai.js";
 
 let geminiModels = [
+  "gemini-2.5-pro-exp-03-25",
   "gemini-2.0-flash",
   "gemini-2.0-flash-exp",
   "gemini-2.0-flash-lite",
   "gemini-2.0-flash-lite-preview-02-05",
-  // "gemini-1.5-flash",
-  // "gemini-1.5-flash-8b",
   "gemini-2.0-flash-thinking-exp-01-21",
 ];
 const M = geminiModels.slice();

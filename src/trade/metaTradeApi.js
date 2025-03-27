@@ -134,7 +134,7 @@ class MetaTradeApi {
     }
 
     let vol = Math.min(symbolSpec.maxVolume, Math.floor(volume * 100) / 100);
-    vol = Math.floor((vol / 7) * 100) / 100;
+    // vol = Math.floor((vol / 7) * 100) / 100;
     return Math.max(symbolSpec.minVolume, vol);
   }
 

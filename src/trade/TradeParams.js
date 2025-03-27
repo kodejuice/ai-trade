@@ -55,7 +55,8 @@ export class TradeParams {
         const minTakeProfit = bid + minDistanceForStopLoss;
 
         if (params.stop_loss > minStopLoss) params.stop_loss = minStopLoss;
-        if (params.take_profit < minTakeProfit) params.take_profit = minTakeProfit;
+        if (params.take_profit < minTakeProfit)
+          params.take_profit = minTakeProfit;
 
         // Ensure risk:reward ratio of at least 1:2
         const riskDistance = Math.abs(bid - params.stop_loss);
@@ -69,7 +70,8 @@ export class TradeParams {
         const minTakeProfit = ask - minDistanceForStopLoss;
 
         if (params.stop_loss < minStopLoss) params.stop_loss = minStopLoss;
-        if (params.take_profit > minTakeProfit) params.take_profit = minTakeProfit;
+        if (params.take_profit > minTakeProfit)
+          params.take_profit = minTakeProfit;
 
         // Ensure risk:reward ratio of at least 1:2
         const riskDistance = Math.abs(ask - params.stop_loss);
@@ -122,6 +124,7 @@ export class TradeParams {
       response: secondParams.response,
       model,
     });
+    secondParams.response = undefined;
 
     return {
       ...secondParams,
@@ -140,7 +143,7 @@ export class TradeParams {
     const model = this._getModelForPlatform(platform);
     const params = await this.extractTradeParamsFromResponse(response);
 
-    return { ...params, model };
+    return { ...params, model, response };
   }
 
   static _getModelForPlatform(platform) {
@@ -254,7 +257,10 @@ response: ${response}`;
 
       const timestamp = parseInt(file.split("-").pop().replace(".txt", ""));
       if (timestamp < maxTime) {
-        await fs.unlink(`${logPath}/${file}`);
+        // check if file exists
+        if (await fs.stat(`${logPath}/${file}`)) {
+          await fs.unlink(`${logPath}/${file}`);
+        }
       }
     }
 
