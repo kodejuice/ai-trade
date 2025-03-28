@@ -9,8 +9,8 @@ import { getTickersForTrading } from "./trade/tradeTickers.js";
 async function main() {
   console.log("\n[Begin placing trade]");
 
-  await placeTrades("scalp");
-  await placeTrades("swing", 1);
+  // await placeTrades("scalp");
+  await placeTrades("swing", 3);
 
   console.log("\nWaiting for 7 minutes...\n");
   await waitFor(60 * 7);
@@ -37,5 +37,3 @@ async function placeTrades(tradeType, maxTrades = null) {
 }
 
 main();
-
-// Spring Pin: 229455
