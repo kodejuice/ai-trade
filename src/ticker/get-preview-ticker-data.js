@@ -201,6 +201,14 @@ export async function getHistoricalData(symbol) {
     includePrePost: true,
   });
 
+  // For intraday (30min intervals)
+  const _3daysAgo = getTradingDateNDaysAgo(3);
+  const historical30min = await yahooFinance.chart(symbol, {
+    period1: _3daysAgo,
+    interval: "30m",
+    includePrePost: true,
+  });
+
   // For intraday (15min intervals)
   const _5daysAgo = getTradingDateNDaysAgo(5);
   const historical15min = await yahooFinance.chart(symbol, {
@@ -226,7 +234,13 @@ export async function getHistoricalData(symbol) {
     includePrePost: true,
   });
 
-  return { historical1m, historical5m, historical15min, historicalDaily };
+  return {
+    historical1m,
+    historical5m,
+    historical15min,
+    historical30min,
+    historicalDaily,
+  };
 }
 
 /**

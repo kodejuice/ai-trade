@@ -52,24 +52,19 @@ export async function getFullTickerData(symbol, tradeType = "swing") {
         return data;
       }
 
-      const historicalIntraday15min = historicalData.historical5m;
-      const historicalIntradayData = Array.from(
-        historicalIntraday15min.quotes
-      ).filter((x) =>
-        symbol.toLowerCase().includes("=x")
-          ? true /* forex quotes dont have volume */
-          : x.volume > 0
-      );
-      const latestIntraDayData = historicalIntradayData.slice(-3, -1); // [_, ..., X, X, _]
+      // const historicalIntraday15min = historicalData.historical5m;
+      // const historicalIntradayData = Array.from(
+      //   historicalIntraday15min.quotes
+      // ).filter((x) =>
+      //   symbol.toLowerCase().includes("=x")
+      //     ? true /* forex quotes dont have volume */
+      //     : x.volume > 0
+      // );
+      // const latestIntraDayData = historicalIntradayData.slice(-3, -1); // [_, ..., X, X, _]
 
-      // Append latest intraday data to historical daily data
-      data["quotes"] = [
-        ...historicalDailyData.slice(0, -1),
-        ...latestIntraDayData,
-        historicalDailyData.at(-1),
-      ];
+      data["quotes"] = historicalDailyData;
     } else if (tradeType === "scalp") {
-      const historicalIntraday = historicalData.historical5m;
+      const historicalIntraday = historicalData.historical30min;
       const historicalIntradayData = Array.from(
         historicalIntraday.quotes
       ).filter((x) =>
@@ -135,7 +130,13 @@ export async function getFullTickerData(symbol, tradeType = "swing") {
         ...Q.slice(-14), // show most recent 14 points of data
       ];
     } else if (tradeType === "scalp") {
-      data["quotes"] = Q.slice(-19); // show only most recent 19 points for scalping
+      data["quotes"] = [
+        // ...Q.slice(-42, -35), // show data from 42 to 35 points ago
+        // ...Q.slice(-35, -28), // hidden: data from 35 to 28 points ago
+        ...Q.slice(-33, -26), // show data from 28 to 21 points ago
+        // ...Q.slice(-21, -14), // hidden: data from 21 to 14 points ago
+        ...Q.slice(-19), // show most recent 19 points of data
+      ];
     }
 
     return data;
