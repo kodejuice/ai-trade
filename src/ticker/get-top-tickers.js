@@ -14,13 +14,6 @@ export const getTopTickers = async (tradeType = "scalp", n = 7, log = true) => {
   );
 
   const tradableTickers = await filterTradableTickers(sortedTickers, n);
-
-  // if (log) {
-  //   console.log(
-  //     `[[(${tradeType}): ${tradableTickers.length} tickers open for trading]] => [${tradableTickers}]\n`
-  //   );
-  // }
-
   return tradableTickers;
 };
 
