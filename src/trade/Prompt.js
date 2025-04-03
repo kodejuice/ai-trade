@@ -29,89 +29,172 @@ export class TradePromptGenerator {
   }
 
   static getSystemPrompt(tradeType) {
-    return `You are a professional ${tradeType} trader. You analyze ticker data and make highly accurate trading decisions. Based on the given ticker data, provide detailed systematic analysis and recommend whether to BUY or SELL or Avoid trading for now.`;
+    // return `You are a professional ${tradeType} trader. You analyze ticker data and make highly accurate trading decisions. Based on the given ticker data, provide detailed systematic analysis and recommend whether to BUY or SELL or Avoid trading for now.`;
+    return "";
   }
 
   static scalpTradePrompt(tickerData) {
-    const technicalIndicators = tickerData?.quotes?.at(-1)?.technicalIndicators || {};
+    const technicalIndicators =
+      tickerData?.quotes?.at(-1)?.technicalIndicators || {};
 
     return `
-Analyze the following asset data as an expert scalp trader. Follow this structured approach:
+Objective: Act as an expert short-term scalp trader analyzing asset data to identify a high-probability trade opportunity based strictly on the rules provided. Prioritize capital preservation; only recommend a trade if conditions are clearly met.
 
-1. Market Type Determination:
-   - Check ADX: <25 = Ranging, >25 = Trending
-   - Examine Bollinger Bands: Narrow width = Ranging, Price near bands = Potential breakout
-   - Review price patterns: Consecutive HH/HL (Uptrend) or LH/LL (Downtrend)
-   - Check volume: Spikes indicate Volatile/Breakout markets
+Input Data:
+- Ticker Data: ${JSON.stringify(tickerData, null, 1)}
+- Technical Indicators:
+    - ADX: ${technicalIndicators.ADX}
+    - Bollinger Bands (BB):
+        - Upper: ${technicalIndicators.BBANDS?.upper}
+        - Middle: ${technicalIndicators.BBANDS?.middle}
+        - Lower: ${technicalIndicators.BBANDS?.lower}
+    - EMA9: ${technicalIndicators.EMA9}
+    - EMA20: ${technicalIndicators.EMA20}
+    - RSI: ${technicalIndicators.RSI}
+    - Stochastic (%K, %D): ${technicalIndicators.STOCH?.k}, ${
+      technicalIndicators.STOCH?.d
+    }
+    - ATR: ${technicalIndicators.ATR}
+    - Volume (Current/Recent Avg): [Requires Volume data - Assuming available in tickerData or technicalIndicators]
 
-2. Strategy Selection:
-   - Trending Market: Use EMA crossover (9 vs 20), RSI extremes (<30 buy, >70 sell)
-   - Ranging Market: Buy near BB lower band/oversold RSI-Stoch, sell near BB upper band/overbought
-   - Volatile/Breakout: Use 2x ATR for stops, confirm with volume surge
+Structured Analysis & Decision Process (Follow Sequentially):
 
-3. Risk Management:
-   - Always set stops: 2x ATR (${2 * technicalIndicators.ATR} ± current price)
-   - Profit targets: 1.5x ATR or key technical levels (EMA20 / BB middle band)
-   - Position size: Smaller in volatile markets (≤2% risk)
-   - Ensure a Risk/Reward ratio of 1:2 or better
+Phase 1: Pre-Trade Checks (Fail Fast)
 
-4. Execution Rules:
-   - Require 3 confirming signals (e.g. BB position + RSI + EMA alignment)
-   - Avoid trades with conflicting indicators
-   - Prioritize recent price action (<5 minute timeframe)
-   - Time Horizon: Typical trade duration 1-15 minutes - close positions before momentum fade
-   - Scalp Exit Protocol: Take partial profits at 0.75x ATR if price stalls
+1.  Data Integrity: Is 'technicalIndicators.ADX', 'BBANDS', 'EMA9', 'EMA20', 'RSI', 'STOCH', 'ATR' and 'tickerData.latestPrice' available and numeric?
+    -   If NO, output 'no_trade' (Reason: Incomplete Data).
+2.  Liquidity Check: Is current volume significantly low compared to recent average? [Specify how to check this if data available, e.g., 'current_volume < 0.5 * avg_volume_20_periods']
+    -   If YES (low volume), output 'no_trade' (Reason: Low Liquidity).
+3.  Spread Check:
+      Calculate Spread = '(${tickerData.latestPrice.ask} - ${
+      tickerData.latestPrice.bid
+    })'.
+      Calculate Spread Percentage = '(Spread / ${
+        tickerData.latestPrice.ask
+      }) * 100'.
+      Is Spread Percentage > 0.5%?
+    -   If YES, output 'no_trade' (Reason: High Spread).
 
-Given this data: ${JSON.stringify(tickerData, null, 1)}
+Phase 2: Market Analysis
 
-Critical Price Levels:
-- Current Price:
-  Buy/Ask Price = ${tickerData.latestPrice.ask}
-  Sell/Bid Price = ${tickerData.latestPrice.bid}
+4.  Market Type Determination:
+    -   ADX Check: Use 'ADX = ${technicalIndicators.ADX}'.
+        -   If 'ADX <= 25': Market is Ranging.
+        -   If 'ADX > 25': Market is Trending.
+    -   Volatility Check (using BB Width & Volume):
+        -   BB Width = '(${technicalIndicators.BBANDS?.upper} - ${
+      technicalIndicators.BBANDS?.lower
+    })'. Is width significantly expanding compared to recent periods? [Requires historical width context if possible, otherwise use judgment based on current price action relative to bands].
+        -   Is volume surging significantly above average?
+        -   If BB width is expanding rapidly OR price is breaking out of bands with high volume: Consider the market Volatile/Breakout. Note: This often overlaps with Trending.
 
-- BB Upper: ${technicalIndicators.BBANDS?.upper}
-- BB Lower: ${technicalIndicators.BBANDS?.lower}
-- EMA9: ${technicalIndicators.EMA9}
-- ATR Stop Buffer: ±${2 * technicalIndicators.ATR}
+5.  Price Location & Key Levels:
+    -   Current Ask Price: '${tickerData.latestPrice.ask}'
+    -   Current Bid Price: '${tickerData.latestPrice.bid}'
+    -   Identify proximity to key levels: BB Upper ('${
+      technicalIndicators.BBANDS?.upper
+    }'), BB Lower ('${technicalIndicators.BBANDS?.lower}'), BB Middle ('${
+      technicalIndicators.BBANDS?.middle
+    }'), EMA9 ('${technicalIndicators.EMA9}'), EMA20 ('${
+      technicalIndicators.EMA20
+    }').
+    -   Is price currently touching or very close (e.g., within 0.25 * ATR) to one of these key levels?
+    -   Is price stuck between key levels with no clear directional pressure? If so, lean towards 'no_trade'.
 
-Produce JSON response with:
-- Market type from strict ADX threshold
-- Strategy matching market type EXACTLY from list
-- Clear numeric stops/targets using ATR/BB levels
-- Trade ONLY if price at key technical level with confirmation
+Phase 3: Strategy Formulation
 
-Note:
-- AVOID trading when there's low liquidity/volume
-- AVOID trading if data is incomplete
-- REJECT entries with >0.5% bid-ask spread
+6.  Strategy Selection (Based strictly on Market Type):
+    -   If Market Type = Ranging: Select "Ranging - BB/Oscillator Reversion".
+        -   Entry Condition: Look to Buy near BB Lower ('${
+          technicalIndicators.BBANDS?.lower
+        }') ONLY IF RSI ('${technicalIndicators.RSI}') <= 30 OR Stoch ('${
+      technicalIndicators.STOCH?.k
+    }') <= 20. Look to Sell near BB Upper ('${
+      technicalIndicators.BBANDS?.upper
+    }') ONLY IF RSI ('${technicalIndicators.RSI}') >= 70 OR Stoch ('${
+      technicalIndicators.STOCH?.k
+    }') >= 80.
+    -   If Market Type = Trending: Select "Trending - EMA Crossover/RSI Pullback".
+        -   Determine Trend Direction: Recent price making Higher Highs/Higher Lows (Uptrend) or Lower Highs/Lower Lows (Downtrend)? Is EMA9 ('${
+          technicalIndicators.EMA9
+        }') above EMA20 ('${
+      technicalIndicators.EMA20
+    }') (Uptrend signal) or below (Downtrend signal)?
+        -   Entry Condition (Uptrend): Look to Buy on pullbacks towards EMA9/EMA20 ONLY IF RSI ('${
+          technicalIndicators.RSI
+        }') is NOT overbought (>70) and ideally near 40-50 support. Require EMA9 > EMA20 confirmation.
+        -   Entry Condition (Downtrend): Look to Sell on rallies towards EMA9/EMA20 ONLY IF RSI ('${
+          technicalIndicators.RSI
+        }') is NOT oversold (<30) and ideally near 50-60 resistance. Require EMA9 < EMA20 confirmation.
+    -   If Market Conditions = Volatile/Breakout: Select "Volatile/Breakout - Confirmation Entry".
+        -   Entry Condition: Wait for a clear breakout confirmed by a significant volume surge and candle close beyond a key level (e.g., BB band). Enter in the direction of the breakout. Use tighter confirmation criteria.
 
-Response format:
-((({
-  "market_type": "[Trending/Ranging/Volatile/...]",
-  "recommended_strategy": "[Exact strategy name from provided list]",
-  "strategy_rationale": "Concise technical justification using 2-3 indicators",
+7.  Confirmation Signal Check:
+    -   Does the specific entry condition for the selected strategy have at least 2-3 confirming indicators? (e.g., For Ranging Buy: Price at BB Lower + RSI Oversold + Stoch Oversold).
+    -   Are there significant conflicting signals? (e.g., ADX Ranging, but price breaking BB Upper strongly? Or EMA cross bullish, but RSI severely overbought?).
+    -   If confirmation is weak OR conflicts exist, output 'no_trade'.
 
-  "order_type": "buy/sell/null",
-  "take_profit": [calculated numeric value],
-  "stop_loss": [calculated numeric value],
-  "confidence_score": 1-10
-})))
+Phase 4: Trade Execution Plan (Only if a valid entry is identified)
 
-Return '((({"no_trade": true})))' if:
-- Conflicting signals
-- Price between technical levels without clear edge
-- Not enough confirmation
-- There is low liquidity/volume
-- Spread >0.5% of asset price
+8.  Order Type: 'buy' or 'sell' based on strategy confirmation.
+9.  Entry Price Reference: Use Ask Price ('${
+      tickerData.latestPrice.ask
+    }') for Buy orders, Bid Price ('${
+      tickerData.latestPrice.bid
+    }') for Sell orders.
+10. Risk Management Calculation:
+    -   ATR Value: '${technicalIndicators.ATR}'
+    -   Stop Loss Buffer: '2 * ${technicalIndicators.ATR}'
+    -   Profit Target Multiplier: '1.5' (aiming for 1.5 * ATR)
+    -   Stop Loss (SL):
+        -   For Buy: 'Entry Price (Ask) - (2 * ${technicalIndicators.ATR})'
+        -   For Sell: 'Entry Price (Bid) + (2 * ${technicalIndicators.ATR})'
+    -   Take Profit (TP):
+        -   For Buy: 'Entry Price (Ask) + (1.5 * ${
+          technicalIndicators.ATR
+        })' OR nearest significant resistance (e.g., BB Middle/Upper). Use the closer target.
+        -   For Sell: 'Entry Price (Bid) - (1.5 * ${
+          technicalIndicators.ATR
+        })' OR nearest significant support (e.g., BB Middle/Lower). Use the closer target.
+    -   Risk/Reward Ratio (RRR): Calculate 'Potential Profit (TP - Entry) / Potential Loss (Entry - SL)'. Is RRR >= 1.5? (Note: Prompt originally asked for 1:2, adjusted here to match 1.5x ATR target vs 2x ATR stop which is closer to 1:1.5 - adjust if 1:2 is strict).
+        -   If RRR < 1.5, output 'no_trade' (Reason: Poor RRR).
+11. Position Sizing Consideration: If market flagged as Volatile, mentally note that position size should be smaller (rule: ≤2% risk per trade - calculation not required in output).
+12. Confidence Score: Assign a score (1-10) based on the clarity and confluence of signals, proximity to ideal entry, and lack of conflicting data. High confluence = higher score. Borderline signals = lower score.
 
-If we are avoiding a trade return ((({"no_trade": true})))
+Phase 5: Final Output Generation
 
-Do a deep dive analysis before returning a JSON response
+13. Synthesize Findings: Based on the above steps, construct the JSON response.
+14. Final Check: Does the situation strongly match the rules? If any doubt or ambiguity remains, default to 'no_trade'.
+
+Output Format:
+
+-   If a valid trade is identified:
+    ((({
+      "market_type": "[Trending/Ranging/Volatile/Breakout]", // Determined in Step 4
+      "recommended_strategy": "[Exact strategy name selected in Step 6]",
+      "strategy_rationale": "Concise justification using 2-3 specific indicator values and price action relative to levels (e.g., Price at BB Lower ${
+        technicalIndicators.BBANDS?.lower
+      }, RSI ${technicalIndicators.RSI} < 30, Stoch ${
+      technicalIndicators.STOCH?.k
+    } < 20).",
+      "order_type": "[buy/sell]", // Determined in Step 8
+      "entry_price_reference": [Ask price for Buy, Bid price for Sell], // Reference price used for calculation
+      "take_profit": [Calculated numeric value from Step 10],
+      "stop_loss": [Calculated numeric value from Step 10],
+      "risk_reward_ratio": [Calculated numeric value from Step 10],
+      "confidence_score": [1-10 integer based on Step 12]
+    })))
+
+-   If no trade is recommended (due to any 'no_trade' condition triggered above):
+    ((({"no_trade": true, "reason": "[Specific reason, e.g., High Spread, Conflicting Signals, Price Between Levels, Low Liquidity, Poor RRR, Incomplete Data]"})))
+
+Execute the analysis now based only on the provided data and the strict rules outlined above. Perform a step-by-step reasoning process internally before generating the final JSON output.
 `;
   }
 
   static swingTradePrompt(tickerData) {
-    const technicalIndicators = tickerData?.quotes?.at(-1)?.technicalIndicators || {};
+    const technicalIndicators =
+      tickerData?.quotes?.at(-1)?.technicalIndicators || {};
 
     return `
 Analyze the following asset data as a professional swing trader. Use this framework:
@@ -194,7 +277,6 @@ If we are avoiding a trade return ((({"no_trade": true})))
 Do a deep dive analysis before returning a JSON response
 `;
   }
-
 }
 
 /*
@@ -330,4 +412,3 @@ If it is not the best time to enter a trade, just return a {"no_trade": true} ob
     // (1 point = 0.0001 of the price)
   }
 */
-
