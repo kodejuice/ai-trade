@@ -9,11 +9,11 @@ import { getTickersForTrading } from "./trade/tradeTickers.js";
 async function main() {
   console.log("\n[Begin placing trade]");
 
-  // await placeTrades("scalp");
-  await placeTrades("swing", 3);
+  await placeTrades("scalp", 3);
+  // await placeTrades("swing", 3);
 
-  console.log("\nWaiting for 7 minutes...\n");
-  await waitFor(60 * 7);
+  console.log("\nWaiting for 3 minutes...\n");
+  await waitFor(60 * 3);
   main();
 
   return 0;
@@ -32,7 +32,7 @@ async function placeTrades(tradeType, maxTrades = null) {
     trades++;
     if (maxTrades && trades >= maxTrades) break;
 
-    await waitFor(3);
+    await waitFor(15);
   }
 }
 
