@@ -4,7 +4,7 @@ import { getGeminiModel, getGeminiReponse } from "../helpers/llm/gemini.js";
 import { getGroqModel } from "../helpers/llm/groq.js";
 import { metaTradeAPI } from "./metaTradeApi.js";
 import { TradePromptGenerator } from "./Prompt.js";
-import { extractAmountFromText } from "../helpers/util.js";
+import { extractAmountFromText, getFSSConfirmation } from "../helpers/util.js";
 import { getLLMResponse } from "../helpers/llm/llm.js";
 import { getOpenAIModel } from "../helpers/llm/openai.js";
 
@@ -18,7 +18,7 @@ export class TradeParams {
     this.cleanupOldLogs();
 
     try {
-      const params =
+      let params =
         (await this._getTradeParams(symbol, tradeType)) || NoTradeObject;
 
       await this.adjustTradeParams(params, symbol);
@@ -99,39 +99,65 @@ export class TradeParams {
     const firstParams = await this._getLLMTradeParams(
       systemPrompt,
       userPrompt,
-      "gemini"
-    );
-    if (!this._isValidTradeParams(firstParams)) return null;
-
-    const secondParams = await this._getLLMTradeParams(
-      systemPrompt,
-      userPrompt,
       "groq"
     );
-    if (
-      !this._isValidTradeParams(secondParams) ||
-      secondParams.order_type !== firstParams.order_type
-    ) {
+
+    if (!this._isValidTradeParams(firstParams)) {
+      await this.logTrade({
+        symbol: `no-trade/${symbol}`,
+        tradeType,
+        userPrompt,
+        response: firstParams.response,
+        model: firstParams.model,
+      });
+
       return null;
     }
 
-    // Log the successful trade parameters
-    const model = `${firstParams.model} -> ${secondParams.model}`;
     await this.logTrade({
       symbol,
       tradeType,
       userPrompt,
-      response: secondParams.response,
-      model,
+      response: firstParams.response,
+      model: firstParams.model,
     });
-    secondParams.response = undefined;
 
     return {
-      ...secondParams,
+      ...firstParams,
       tradeType,
       symbol,
-      model,
+      model: firstParams.model,
     };
+
+    // let secondParams = await this._getLLMTradeParams(
+    //   systemPrompt,
+    //   userPrompt,
+    //   "gemini"
+    // );
+    // if (
+    //   !this._isValidTradeParams(secondParams) ||
+    //   secondParams.order_type !== firstParams.order_type
+    // ) {
+    //   return null;
+    // }
+
+    // Log the successful trade parameters
+    // const model = `${firstParams.model} -> ${secondParams.model}`;
+    // await this.logTrade({
+    //   symbol,
+    //   tradeType,
+    //   userPrompt,
+    //   response: secondParams.response,
+    //   model,
+    // });
+    // secondParams.response = undefined;
+
+    // return {
+    //   ...secondParams,
+    //   tradeType,
+    //   symbol,
+    //   model,
+    // };
   }
 
   static async _getLLMTradeParams(systemPrompt, userPrompt, platform) {
@@ -157,7 +183,7 @@ export class TradeParams {
     return (
       !params.no_trade &&
       ["buy", "sell"].includes(params.order_type) &&
-      params.confidence_score >= 7
+      (getFSSConfirmation() || params.confidence_score >= 8)
     );
   }
 
@@ -258,8 +284,10 @@ response: ${response}`;
       const timestamp = parseInt(file.split("-").pop().replace(".txt", ""));
       if (timestamp < maxTime) {
         // check if file exists
-        if (await fs.stat(`${logPath}/${file}`)) {
+        try {
           await fs.unlink(`${logPath}/${file}`);
+        } catch (error) {
+          // File doesn't exist or other error, ignore
         }
       }
     }
@@ -271,10 +299,14 @@ response: ${response}`;
     });
     for (const dir of dirs) {
       if (dir.isDirectory()) {
-        const dirPath = `${logPath}/${dir.name}`;
-        const files = await fs.readdir(dirPath);
-        if (files.length === 0) {
-          await fs.rmdir(dirPath);
+        const dirPath = `${dir.parentPath}/${dir.name}`;
+        try {
+          const files = await fs.readdir(dirPath);
+          if (files.length === 0) {
+            await fs.rmdir(dirPath);
+          }
+        } catch (error) {
+          // Directory doesn't exist or other error, ignore
         }
       }
     }
