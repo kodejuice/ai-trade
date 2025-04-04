@@ -1,4 +1,4 @@
-
+import { randomInt } from "node:crypto";
 
 export function getTradingDateNDaysAgo(days) {
   const date = new Date();
@@ -7,11 +7,12 @@ export function getTradingDateNDaysAgo(days) {
   while (tradingDaysCount < days) {
     date.setDate(date.getDate() - 1);
     const dayOfWeek = date.getDay();
-    if (dayOfWeek !== 0 && dayOfWeek !== 6) { // Skip Sunday (0) and Saturday (6)
+    if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+      // Skip Sunday (0) and Saturday (6)
       tradingDaysCount++;
     }
   }
-  
+
   return date;
 }
 
@@ -37,7 +38,7 @@ export function formatPercentageValue(value) {
 }
 
 export function extractAmountFromText(text) {
-  text = text.replace(/[^\d.]/g, '');
+  text = text.replace(/[^\d.]/g, "");
   const regex = /\$?(\d+(?:\.\d+)?)/;
   const match = text.match(regex);
   return match ? parseFloat(match[1]) : null;
@@ -48,23 +49,22 @@ export function extractAmountFromText(text) {
 export function computePriceChangePercentage(data, lag) {
   if (!data || data.length <= lag) return null;
   const latest = data.at(-1);
-  const previous = data.at(-lag-1);
-  if (latest == previous) return '0.00%';
+  const previous = data.at(-lag - 1);
+  if (latest == previous) return "0.00%";
   const change = ((latest.close - previous.close) / previous.close) * 100;
   // infinte check
-  if (change === Infinity) return '0.00%';
+  if (change === Infinity) return "0.00%";
   return `${change.toFixed(2)}% (${formatCurrency(previous.close)})`;
 }
 
-
 // Function to recursively round values in an object.
 export function roundObjectValues(obj, precision = 2) {
-  if (typeof obj !== 'object' || obj === null) {
-    return typeof obj === 'number' ? Number(obj.toFixed(precision)) : obj;
+  if (typeof obj !== "object" || obj === null) {
+    return typeof obj === "number" ? Number(obj.toFixed(precision)) : obj;
   }
 
   if (Array.isArray(obj)) {
-    return obj.map(item => roundObjectValues(item, precision));
+    return obj.map((item) => roundObjectValues(item, precision));
   }
 
   const rounded = {};
@@ -80,14 +80,27 @@ export async function waitFor(seconds) {
 
 export function msToTime(ms) {
   if (ms < 0) {
-    return '0:00';
+    return "0:00";
   }
   const hours = Math.floor(ms / 3600000);
   const minutes = Math.floor((ms % 3600000) / 60000);
   const seconds = ((ms % 60000) / 1000).toFixed(0);
-  
+
   if (hours > 0) {
-    return `${hours}h:${minutes.toString().padStart(2, '0')}m:${seconds.padStart(2, '0')}s`;
+    return `${hours}h:${minutes
+      .toString()
+      .padStart(2, "0")}m:${seconds.padStart(2, "0")}s`;
   }
-  return `${minutes}m:${seconds.padStart(2, '0')}s`;
+  return `${minutes}m:${seconds.padStart(2, "0")}s`;
+}
+
+const rand = (a, b) => randomInt(a, b + 1);
+// const rand = (a, b) => Math.round(Math.random() * (b - a) + a);
+
+export function getFSSConfirmation() {
+  const f = rand(1, 7);
+  if (f == rand(1, 7)) {
+    // The father and the son are one
+    return f == 3 && f == rand(1, 7); // The father and the spirit are one
+  }
 }
