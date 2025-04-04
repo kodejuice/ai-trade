@@ -121,6 +121,7 @@ export class TradeParams {
       response: firstParams.response,
       model: firstParams.model,
     });
+    firstParams.response = undefined;
 
     return {
       ...firstParams,
@@ -128,36 +129,6 @@ export class TradeParams {
       symbol,
       model: firstParams.model,
     };
-
-    // let secondParams = await this._getLLMTradeParams(
-    //   systemPrompt,
-    //   userPrompt,
-    //   "gemini"
-    // );
-    // if (
-    //   !this._isValidTradeParams(secondParams) ||
-    //   secondParams.order_type !== firstParams.order_type
-    // ) {
-    //   return null;
-    // }
-
-    // Log the successful trade parameters
-    // const model = `${firstParams.model} -> ${secondParams.model}`;
-    // await this.logTrade({
-    //   symbol,
-    //   tradeType,
-    //   userPrompt,
-    //   response: secondParams.response,
-    //   model,
-    // });
-    // secondParams.response = undefined;
-
-    // return {
-    //   ...secondParams,
-    //   tradeType,
-    //   symbol,
-    //   model,
-    // };
   }
 
   static async _getLLMTradeParams(systemPrompt, userPrompt, platform) {
