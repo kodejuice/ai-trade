@@ -79,14 +79,14 @@ async function getRedisClient() {
     try {
       redisClient = createClient(REDIS_CONFIG());
       redisClient.on("error", (err) => {
-        console.warn("Redis connection error:", err);
+        console.warn("Redis connection error");
         if (["EADDRNOTAVAIL", "ECONNREFUSED"].includes(err.code)) {
           redisEnabled = false;
         }
       });
       await redisClient.connect();
     } catch (error) {
-      console.warn("Failed to connect to Redis:", error);
+      console.warn("Failed to connect to Redis");
       redisEnabled = false;
       return null;
     }
@@ -106,7 +106,7 @@ export async function getCachedResult(
     if (lruValue !== -1) return lruValue;
 
     const client = await getRedisClient();
-    if (client) {
+    if (client && redisEnabled) {
       try {
         const value = await client.get(key);
         if (value !== null) {
@@ -124,7 +124,7 @@ export async function getCachedResult(
     const value = await fetchDataFn();
     lruCache.put(key, value);
 
-    if (client) {
+    if (client && redisEnabled) {
       await client
         .set(key, JSON.stringify(value), { EX: expirationSeconds })
         .catch((error) => console.warn("Redis set operation failed"));
@@ -140,19 +140,19 @@ export async function getCachedResult(
 export async function setCachedResult(key, value, expirationSeconds = 780) {
   lruCache.put(key, value);
   const client = await getRedisClient();
-  if (client) {
+  if (client && redisEnabled) {
     await client
       .set(key, JSON.stringify(value), { EX: expirationSeconds })
-      .catch((error) => console.warn("Redis set operation failed:", error));
+      .catch((error) => console.warn("Redis set operation failed"));
   }
 }
 
 export async function invalidateCache(key) {
   lruCache.remove(key);
   const client = await getRedisClient();
-  if (client) {
+  if (client && redisEnabled) {
     await client
       .del(key)
-      .catch((error) => console.warn("Redis delete operation failed:", error));
+      .catch((error) => console.warn("Redis delete operation failed"));
   }
 }
