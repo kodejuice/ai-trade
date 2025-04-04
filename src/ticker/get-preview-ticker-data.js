@@ -171,14 +171,18 @@ export function getVolumeMetrics({ historical1mData, quoteSummary }) {
   const _15minVolume = formatNumber(
     _15minData.reduce((s, record) => s + record.volume || 0, 0)
   );
+  const _30minData = historical1mData.slice(-30);
+  const _30minVolume = formatNumber(
+    _30minData.reduce((s, record) => s + record.volume || 0, 0)
+  );
   const isVolumeEmpty =
     (quoteSummary.summaryDetail?.regularMarketVolume || 0) === 0 &&
     (quoteSummary.summaryDetail?.averageVolume10days || 0) === 0;
-
   return isVolumeEmpty
     ? {}
     : {
-        "current volume (15 min)": _15minVolume,
+        // "current volume (15 min)": _15minVolume,
+        "current volume (30 min)": _30minVolume,
         "average volume (10 days)": formatNumber(
           quoteSummary.summaryDetail?.averageVolume10days
         ),
@@ -201,16 +205,22 @@ export async function getHistoricalData(symbol) {
     includePrePost: true,
   });
 
+  // For intraday (4hr intervals) 
+  const _5daysAgo = getTradingDateNDaysAgo(5);
+  const historical1hr = await yahooFinance.chart(symbol, {
+    period1: _5daysAgo, 
+    interval: "60m",
+    includePrePost: true
+  });
+
   // For intraday (30min intervals)
-  const _3daysAgo = getTradingDateNDaysAgo(3);
   const historical30min = await yahooFinance.chart(symbol, {
-    period1: _3daysAgo,
+    period1: _5daysAgo,
     interval: "30m",
     includePrePost: true,
   });
 
   // For intraday (15min intervals)
-  const _5daysAgo = getTradingDateNDaysAgo(5);
   const historical15min = await yahooFinance.chart(symbol, {
     period1: _5daysAgo,
     interval: "15m",
@@ -218,10 +228,10 @@ export async function getHistoricalData(symbol) {
   });
 
   // For intraday (1min intervals)
-  const _15minAgo = new Date();
-  _15minAgo.setMinutes(_15minAgo.getMinutes() - 15);
+  const _1hrAgo = new Date();
+  _1hrAgo.setMinutes(_1hrAgo.getMinutes() - 60);
   const historical1m = await yahooFinance.chart(symbol, {
-    period1: _15minAgo,
+    period1: _1hrAgo,
     interval: "1m",
     includePrePost: true,
   });
@@ -239,6 +249,7 @@ export async function getHistoricalData(symbol) {
     historical5m,
     historical15min,
     historical30min,
+    historical1hr,
     historicalDaily,
   };
 }

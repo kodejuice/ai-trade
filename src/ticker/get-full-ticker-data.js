@@ -23,7 +23,11 @@ const showIndicator = (value, tradeType, expected) => {
 // ----------------------
 // Fetch and Aggregate Ticker Data (With some historical data)
 // ----------------------
-export async function getFullTickerData(symbol, tradeType = "swing") {
+export async function getFullTickerData(
+  symbol,
+  tradeType = "swing",
+  _1hrTF = false
+) {
   try {
     const data = {};
 
@@ -52,19 +56,11 @@ export async function getFullTickerData(symbol, tradeType = "swing") {
         return data;
       }
 
-      // const historicalIntraday15min = historicalData.historical5m;
-      // const historicalIntradayData = Array.from(
-      //   historicalIntraday15min.quotes
-      // ).filter((x) =>
-      //   symbol.toLowerCase().includes("=x")
-      //     ? true /* forex quotes dont have volume */
-      //     : x.volume > 0
-      // );
-      // const latestIntraDayData = historicalIntradayData.slice(-3, -1); // [_, ..., X, X, _]
-
       data["quotes"] = historicalDailyData;
     } else if (tradeType === "scalp") {
-      const historicalIntraday = historicalData.historical30min;
+      const historicalIntraday = _1hrTF
+        ? historicalData.historical1hr
+        : historicalData.historical30min;
       const historicalIntradayData = Array.from(
         historicalIntraday.quotes
       ).filter((x) =>
@@ -105,12 +101,12 @@ export async function getFullTickerData(symbol, tradeType = "swing") {
           // swing
           OBV: showIndicator(technicals.OBV[index], tradeType, "swing"),
           MACD: showIndicator(technicals.MACD[index], tradeType, "swing"),
-          EMA50: showIndicator(technicals.EMA50[index], tradeType, "swing"),
           EMA200: showIndicator(technicals.EMA200[index], tradeType, "swing"),
           SMA50: showIndicator(technicals.SMA50[index], tradeType, "swing"),
           SMA200: showIndicator(technicals.SMA200[index], tradeType, "swing"),
 
           // common
+          EMA50: technicals.EMA50[index],
           EMA20: technicals.EMA20[index],
           STOCH: technicals.STOCH[index],
           BBANDS: technicals.BBANDS[index],
@@ -133,9 +129,9 @@ export async function getFullTickerData(symbol, tradeType = "swing") {
       data["quotes"] = [
         // ...Q.slice(-42, -35), // show data from 42 to 35 points ago
         // ...Q.slice(-35, -28), // hidden: data from 35 to 28 points ago
-        ...Q.slice(-33, -26), // show data from 28 to 21 points ago
+        // ...Q.slice(-33, -26), // show data from 28 to 21 points ago
         // ...Q.slice(-21, -14), // hidden: data from 21 to 14 points ago
-        ...Q.slice(-19), // show most recent 19 points of data
+        ...Q.slice(-17), // show most recent 19 points of data
       ];
     }
 
