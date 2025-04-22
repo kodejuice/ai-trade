@@ -143,7 +143,7 @@ class MetaTradeApi {
     const tradeOptions = {
       comment: tradeType,
       trailingStopLoss: {
-        distance: { distance: 20, units: "RELATIVE_POINTS" },
+        distance: { distance: 20, units: "RELATIVE_PIPS" },
       },
     };
 
