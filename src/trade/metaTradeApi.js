@@ -237,7 +237,7 @@ class MetaTradeApi {
 
       return price ? { ask: price.ask, bid: price.bid } : {};
     } catch (error) {
-      console.error(`Failed to get price for ${symbol}:`, error.message);
+      // console.error(`Failed to get price for ${symbol}:`, error.message);
       return {};
     }
   }
@@ -258,7 +258,7 @@ class MetaTradeApi {
       await connection.unsubscribeFromMarketData(symbol);
       return (this.specCache[symbol] = spec);
     } catch (error) {
-      console.error(`Failed to get spec for ${symbol}:`, error);
+      // console.error(`Failed to get spec for ${symbol}:`, error);
       return {};
     }
   }
