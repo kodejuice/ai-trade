@@ -21,7 +21,8 @@ export class TradePromptGenerator {
       stopsLevel,
     };
     if (!bid || !ask) {
-      const bid = (ask = tickerData.priceMetrics?.currentPrice);
+      const bid = tickerData.priceMetrics?.currentPrice;
+      const ask = bid;
       tickerData.latestPrice = { bid, ask };
     }
 

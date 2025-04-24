@@ -29,7 +29,7 @@ export class TradeParams {
 
       return params;
     } catch (error) {
-      console.log(`Failed to get params [${symbol}] ${error}`);
+      console.error(`Failed to get params [${symbol}]`, error);
       return NoTradeObject;
     }
   }
