@@ -29,7 +29,7 @@ export async function getLLMResponse({
     return getGeminiReponse({
       systemPrompt,
       userPrompt,
-      model: model || "gemini-2.0-flash-thinking-exp-01-21",
+      model: model || "gemini-2.5-flash-preview-04-17",
     });
   }
   if (platform === "groq") {
