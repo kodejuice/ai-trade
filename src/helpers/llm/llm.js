@@ -8,7 +8,10 @@ import { getGroqResponse } from "./groq.js";
 import { getOpenAIReponse } from "./openai.js";
 
 export async function LLMResponse({ systemPrompt, userPrompt }) {
-  const cacheKey = crypto.createHash("sha256").update(userPrompt).digest("hex");
+  const cacheKey = crypto
+    .createHash("sha256")
+    .update(`${systemPrompt}:${userPrompt}`)
+    .digest("hex");
   return getCachedResult(
     `${cacheKey}`,
     async () => {

@@ -9,7 +9,6 @@ A trading bot that uses LLMs (Gemini, Groq, OpenAI) to analyze market data and m
 - Pulls data from Yahoo Finance API (free and works well enough)
 - Gets multiple timeframes (1min -> daily) for proper analysis
 - Calculates a bunch of indicators (RSI, MACD, BB, etc.) using `technicalindicators` npm package
-- Caches everything in Redis + LRU to avoid rate limits
 
 ### 2. LLM Trading Brain
 
@@ -34,8 +33,10 @@ A trading bot that uses LLMs (Gemini, Groq, OpenAI) to analyze market data and m
 ```markdown
 src/
 ├── helpers/                       # Utility functions, caching, etc.
+|
 ├── ticker/                        # Market data and analysis
 │   └── get-full-ticker-data.js    # Main data fetcher
+|
 ├── trade/                         # Trading logic
 │   ├── TradeParams.js             # Trade parameter calculation
 │   └── metaTradeApi.js            # Trading execution
@@ -79,9 +80,9 @@ npm start
 - [ ] Monitor trades and update positions in real-time
 - [ ] Add more sophisticated position sizing
 - [ ] Implement proper backtesting framework
-- [ ] Better error handling for API timeouts
 - [ ] Improve model prompts for better accuracy
 - [ ] Web interface for monitoring trades
+- [ ] Better error handling for API timeouts
 
 ### Nice to Have
 
