@@ -44,7 +44,7 @@ export class TradePromptGenerator {
     const technicalIndicators_1h =
       tickerData_1hr?.quotes?.at(-1).technicalIndicators || {};
 
-    return `Objective: Act as an expert multi-timeframe scalp trader analyzing asset data to identify a high-probability short-term (30min chart focus) trade opportunity, using 1-hour chart context for bias and key levels. Base decisions strictly on the rules provided. Prioritize capital preservation; only recommend a trade if conditions on the 30min timeframe align well with the 1h context and rules are clearly met.
+    return `Objective: Act as an expert multi-timeframe scalp trader simulating discretionary judgment. Analyze asset data to identify HIGH-PROBABILITY, short-term (30min chart focus) trade opportunities, rigorously filtering signals using 1-hour context, price action, momentum quality, and reversal checks. Base decisions strictly on the enhanced rules. Prioritize capital preservation; only recommend a trade if multiple categories of evidence strongly align and risk is well-defined. Aim to filter for trades with a higher likelihood of success (>66% target requires filtering out borderline setups).
 
 Input Data:
 - Lower Timeframe (30min) Ticker Data: ${JSON.stringify(tickerData, null, 1)}
@@ -57,11 +57,11 @@ Input Data:
     - EMA9: ${technicalIndicators.EMA9}
     - EMA20: ${technicalIndicators.EMA20}
     - RSI: ${technicalIndicators.RSI}
-    - Stochastic (%K, %D): ${technicalIndicators.STOCH?.k}, ${
-      technicalIndicators.STOCH?.d
-    }
+    - Stochastic (%K, %D): ${technicalIndicators.STOCH?.k}, ${technicalIndicators.STOCH?.d}
     - ATR (30min): ${technicalIndicators.ATR}
-    - Volume (Current/Recent Avg): [Requires Volume data - Assuming available in tickerData or technicalIndicators]
+    - Volume (Current/Recent Avg):
+      Current: ${tickerData.volumeMetrics?.["current volume (30 min)"]} (30 min)
+    - Recent Candles (e.g., Last 3-5 OHLC)
 
 - Higher Timeframe (1h) Technical Indicators:
     - ADX_1h: ${JSON.stringify(technicalIndicators_1h.ADX)}
@@ -72,25 +72,23 @@ Input Data:
     - RSI_1h: ${technicalIndicators_1h.RSI}
     - Most Recent 1h Ticker Data: ${JSON.stringify(tickerData_1hr?.quotes?.at(-1), null, 1)}
 
-Structured Analysis & Decision Process (Follow Sequentially):
+Structured Analysis & Decision Process (Follow Sequentially & Rigorously):
 
 Phase 1: Pre-Trade Checks (Fail Fast - Based on 30min Data)
 
-1.  Data Integrity: Are 30min indicators (technicalIndicators.ADX, BBANDS, EMA9, EMA20, RSI, STOCH, ATR) and tickerData.latestPrice available and numeric? Are key 1h indicators (e.g., ADX_1h, EMA20_1h, EMA50_1h) available?
-    -   If NO, output 'no_trade' (Reason: Incomplete Data).
-2.  Liquidity Check (30min): Is current volume significantly low compared to recent average? [Specify check, e.g., 'current_volume < 0.5 * avg_volume_20_periods']
-    -   If YES (low volume), output 'no_trade' (Reason: Low Liquidity).
-3.  Spread Check (30min): Calculate Spread = (${tickerData.latestPrice.ask} - ${
+1.  Data Integrity: All required 30min and 1h indicators, price, volume, and recent candle data available and numeric? If NO, output 'no_trade' (Reason: Incomplete Data).
+2.  Liquidity/Spread Check: Calculate Spread = (${tickerData.latestPrice.ask} - ${
       tickerData.latestPrice.bid
     }). Calculate Spread Percentage = (Spread / ${
       tickerData.latestPrice.ask
     }) * 100. Is Spread Percentage > 0.5%?
     -   If YES, output 'no_trade' (Reason: High Spread).
+3.  Market Condition Check: Avoid known low-volatility periods or just before major news if context is available.
 
-Phase 2: Multi-Timeframe Market Analysis
+Phase 2: Multi-Timeframe Market Analysis & Context
 
 4.  Higher Timeframe (1h) Context:
-    -   1h Trend Direction:
+    -   1h Trend: Determine direction (using EMAs, price structure) and strength (ADX_1h). Note overall 1h bias (Uptrend/Downtrend/Ranging).
         -   Use 1h ADX (${
           technicalIndicators_1h.ADX
         }) > 25 to gauge trend strength.
@@ -100,43 +98,34 @@ Phase 2: Multi-Timeframe Market Analysis
       technicalIndicators_1h.EMA50
     }): Price consistently above suggests Uptrend bias, Price consistently below suggests Downtrend bias. Check for EMA crossovers.
         -   Note overall 1h Trend: (e.g., "Strong Uptrend", "Weak Downtrend", "Ranging", "Approaching 1h Resistance").
-    -   Key 1h Levels: Identify potential significant Support/Resistance from 1h indicators (e.g., ${
-      technicalIndicators_1h.EMA20
-    }, ${technicalIndicators_1h.EMA50}, ${
-      technicalIndicators_1h.BBANDS?.upper
-    }, ${
-      technicalIndicators_1h.BBANDS?.lower
-    }). Note if the current 30min price (${tickerData.latestPrice.ask}/${
-      tickerData.latestPrice.bid
-    }) is close to any of these key 1h levels.
+    -   Key 1h Levels: Identify major S/R from 1h EMAs/BBs. Note proximity of current price.
+    -   1h Momentum: Check 1h RSI position (overbought/oversold/neutral).
 
 5.  Lower Timeframe (30min) Market Type Determination:
-    -   ADX Check (30min): Use ADX = ${JSON.stringify(technicalIndicators.ADX)}.
-        -   If ADX <= 25: Market is Ranging (30min).
-        -   If ADX > 25: Market is Trending (30min).
-    -   Volatility Check (30min - using BB Width & Volume):
-        -   BB Width (30min) = (${technicalIndicators.BBANDS?.upper} - ${
-      technicalIndicators.BBANDS?.lower
-    }). Is width expanding?
-        -   Is 30min volume surging?
-        -   If BB width expanding rapidly OR price breaking 30min bands with high volume: Consider Volatile/Breakout (30min).
+    -   ADX (30min): Use ADX = ${JSON.stringify(technicalIndicators.ADX)}.
+      Determine Ranging (<=25) or Trending (>25).
+    -   Volatility (30min): Assess BB width (expanding/contracting) and ATR (spiking/stable/low). Note if volatility seems unusually high (potential exhaustion) or low (potential consolidation setup).
+        -   BB Width (30min) = (upper: ${technicalIndicators.BBANDS?.upper} - lower: ${technicalIndicators.BBANDS?.lower}).
+    Is width expanding?
+      -   Is 30min volume surging?
+      -   If BB width expanding rapidly OR price breaking 30min bands with high volume: Consider Volatile/Breakout (30min).
 
-6.  Lower Timeframe (30min) Price Location & Key Levels:
+6.  Lower Timeframe (30min) Price Action & Location:
     -   Current Ask Price: ${tickerData.latestPrice.ask}
     -   Current Bid Price: ${tickerData.latestPrice.bid}
-    -   Identify proximity to 30min key levels: BB Upper (${
+    -   Price Location: Identify proximity to 30min key levels (BBs, EMAs). Is price AT a level or BETWEEN levels?
+    BB Upper (${
       technicalIndicators.BBANDS?.upper
     }), BB Lower (${technicalIndicators.BBANDS?.lower}), BB Middle (${
       technicalIndicators.BBANDS?.middle
     }), EMA9 (${technicalIndicators.EMA9}), EMA20 (${
       technicalIndicators.EMA20
     }).
-    -   Is 30min price currently touching or very close (e.g., within 0.25 * ATR (30min)) to one of these 30min key levels?
-    -   Is 30min price stuck between levels with no clear pressure? If so, lean towards 'no_trade'.
+    -   Micro-Structure (Last 3-5 candles): Analyze recent candles. Is there a clear impulse move? Consolidation/flag? Rejection wicks? Deceleration near a level?
 
-Phase 3: Strategy Formulation (Integrating HTF Context)
+Phase 3: Strategy Formulation & Rigorous Filtering
 
-7.  Strategy Selection (Based strictly on 30min Market Type):
+7.  Initial Strategy Selection (Based strictly on 30min Market Type:
     -   If 30min Market Type = Ranging: Select "Ranging - BB/Oscillator Reversion".
         -   Entry Condition: Buy near 30min BB Lower (${
           technicalIndicators.BBANDS?.lower
@@ -162,46 +151,43 @@ Phase 3: Strategy Formulation (Integrating HTF Context)
     -   If 30min Market Conditions = Volatile/Breakout: Select "Volatile/Breakout - Confirmation Entry".
         -   Entry Condition: Wait for clear 30min breakout confirmed by volume surge & candle close beyond a key 30min level. Enter in direction of breakout.
 
-8.  Confirmation & Context Filter:
-    -   Confirmation Signals (30min): Does the specific 30min entry condition have at least 2-3 confirming 30min indicators?
-    -   Conflicting Signals (30min): Are there significant conflicting 30min indicators?
-    -   HTF Alignment Check (1h):
-        -   Does the proposed 30min trade direction align with the identified 1h Trend Context (from Step 4)? (e.g., 30min Buy signal aligns with 1h Uptrend bias). Give STRONG PREFERENCE to aligned trades.
-        -   Is the entry point directly conflicting with a major 1h S/R level identified in Step 4? (e.g., Trying to buy just below strong 1h resistance). AVOID entries directly into strong HTF levels.
-    -   If 30min confirmation is weak OR conflicts exist OR the trade strongly conflicts with 1h context/levels, output 'no_trade'.
 
-Phase 4: Trade Execution Plan (Only if valid entry identified)
+8.  Entry Condition Check & Quality Assessment:
+    -   Check specific entry conditions for the selected strategy (e.g., Buy near BB Low + RSI <= 30 + Stoch <= 20 for Ranging).
+    -   Momentum Quality: Is the oscillator (RSI/Stoch) decisively moving into/out of OB/OS zones, or just hovering? Is the crossover (if applicable) sharp?
+    -   Volume Confirmation: Does volume support the potential move (e.g., increasing volume on potential breakout, low volume on pullback)?
 
-9.  Order Type: 'buy' or 'sell' based on strategy confirmation and 1h alignment.
-10. Entry Price Reference: Use Ask Price (${
-      tickerData.latestPrice.ask
-    }) for Buy, Bid Price (${tickerData.latestPrice.bid}) for Sell.
-11. Risk Management Calculation (Based on 30min ATR):
+9.  Reversal Risk Assessment (CRITICAL FILTER):
+    -   Divergence Check: Look for regular bearish divergence (Price HH vs RSI LH) before longs, or regular bullish divergence (Price LL vs RSI HL) before shorts on BOTH 30m and 1h RSI. If present against the trade direction, assign HIGH REVERSAL RISK.
+    -   Exhaustion Check: Has price made a large, multi-candle move recently without pullback? Is ATR (30min) spiking significantly now? If YES, assign HIGH REVERSAL RISK.
+    -   HTF Level Conflict: Is the entry point directly AT or just below/above a strong conflicting 1h S/R level identified in Step 4? If YES, assign HIGH REVERSAL RISK unless breakout is confirmed.
+    -   Candlestick Rejection: Do the last 1-2 candles show strong rejection wicks against the intended trade direction near the entry level? If YES, assign HIGH REVERSAL RISK.
+
+10. Confluence & Final Filter:
+    -   Require Strong Confluence: Need confirmation from at least **2-3 DIFFERENT categories** (Price Level, Momentum Oscillator, Trend Indicator/Bias, Volume, Supportive Price Action). List the supporting factors.
+    -   HTF Alignment: MUST align with or be neutral to the 1h Trend Bias (from Step 4). Trading directly against a strong 1h trend requires exceptional 30min confirmation and clear reversal signals.
+    -   Reversal Risk Filter: If 'HIGH REVERSAL RISK' was assigned in Step 9 from ANY check, output 'no_trade' (Reason: High Reversal Risk).
+    -   Conflicting Signals: Are there any significant contradictions between indicators (even if minimum confirmation met)? If YES, output 'no_trade' (Reason: Conflicting Signals).
+
+Phase 4: Trade Execution Plan (Only if ALL filters passed)
+
+11. Order Type: 'buy' or 'sell'.
+12. Entry Price Reference: Ask for Buy, Bid for Sell. Consider waiting for candle close confirmation or slight pullback after signal if appropriate.
+13. Risk Management Calculation (Based on 30min ATR):
     -   ATR Value (30min): ${technicalIndicators.ATR}
-    -   Stop Loss Buffer: 2 * ${technicalIndicators.ATR}
-    -   Profit Target Multiplier: 1.5 (aiming for 1.5 * ATR)
-    -   Stop Loss (SL):
-        -   For Buy: Entry Price (Ask) - (2 * ${technicalIndicators.ATR})
-        -   For Sell: Entry Price (Bid) + (2 * ${technicalIndicators.ATR})
-    -   Take Profit (TP):
-        -   Calculate Initial TP:
-            -   For Buy: Entry Price (Ask) + (1.5 * ${technicalIndicators.ATR})
-            -   For Sell: Entry Price (Bid) - (1.5 * ${technicalIndicators.ATR})
-        -   Check against Key Levels: Compare Initial TP with nearest significant 30min resistance/support (e.g., BB Middle/Opposite Band) AND nearest significant 1h S/R level (from Step 4).
-        -   Final TP: Use the target that is CLOSER to the entry price between the calculated TP and the key S/R levels (prioritize respecting key levels over fixed ATR multiple if level is closer).
-    -   Risk/Reward Ratio (RRR): Calculate Potential Profit (Final TP - Entry) / Potential Loss (Entry - SL). Is RRR >= 1.5?
-        -   If RRR < 1.5, output 'no_trade' (Reason: Poor RRR).
-12. Position Sizing Consideration: Note if 30min market is Volatile (smaller size needed).
-13. Confidence Score: Assign score (1-10). Base higher scores on: Strong 30min signal confluence + Clear alignment with 1h trend context + Entry not directly into major 1h S/R level + Good RRR. Lower score for borderline signals or minor HTF conflicts.
+    -   Stop Loss (SL): Entry Price +/- (2 * ${technicalIndicators.ATR}). Ensure SL is placed logically beyond the opposing structure/level where possible.
+    -   Take Profit (TP): Calculate Initial TP = Entry Price +/- (1.5 * ${technicalIndicators.ATR}). Check if nearest significant 30min OR 1h S/R level is CLOSER than initial TP. Final TP = the CLOSER of the calculated TP or the key S/R level.
+    -   "Room to Move" Check: Is the distance to the first minor opposing level (e.g., 30m BB Middle Band, nearest EMA) > 0.75 * ATR? If not, trade might be too constrained. Consider 'no_trade' (Reason: Lack of Space).
+    -   Risk/Reward Ratio (RRR): Calculate (Final TP - Entry) / (Entry - SL). MUST be >= 1.5. If RRR < 1.5, output 'no_trade' (Reason: Poor RRR).
+14. Confidence Score: Assign score (1-10). Higher scores (8+) require: Strong confluence across categories, Clear alignment with 1h context, No reversal warnings passed filter, Clear price action, Good RRR with room to move. Lower scores (5-7) for adequate but less perfect setups. Below 5 should likely be filtered out by earlier steps.
 
 Phase 5: Final Output Generation
 
-14. Synthesize Findings: Construct the JSON response.
-15. Final Check: Does the situation strongly match all rules, including 1h context? Default to 'no_trade' if doubt remains.
+15. Synthesize Findings: Construct JSON.
+16. Final Sanity Check: Does this trade feel forced or is it a clear, high-probability setup based on the stringent rules? If any doubt, default to 'no_trade'.
 
 Output Format:
-
--   If a valid trade is identified:
+-   If valid trade:
     ((({
       "market_type_30min": "[Trending/Ranging/Volatile/Breakout]", // Determined in Step 5
       "higher_timeframe_context_1h": "[e.g., 1h Uptrend, Approaching 1h Resistance at Y, 1h Ranging]", // Determined in Step 4
@@ -210,7 +196,7 @@ Output Format:
         technicalIndicators.BBANDS?.lower
       }, RSI ${
       technicalIndicators.RSI
-    } < 30) + HTF Alignment (e.g., Aligned with 1h Uptrend bias).",
+    } < 30) + HTF Alignment (e.g., Aligned with 1h Uptrend bias). Make sure to mention key confirmations and lack of reversal signals",
       "order_type": "[buy/sell]", // Determined in Step 9
       "entry_price_reference": [Ask price for Buy, Bid price for Sell], // Reference price used for calculation
       "take_profit": [Calculated numeric value from Step 11],
@@ -219,10 +205,10 @@ Output Format:
       "confidence_score": [1-10 integer based on Step 13]
     })))
 
--   If no trade is recommended:
-    ((({"no_trade": true, "reason": "[Specific reason, e.g., High Spread, Conflicting 30min Signals, Poor RRR, Strong Conflict with 1h Trend/Level, Price Between Levels]"})))
+-   If no trade:
+    ((({"no_trade": true, "reason": "[Specific reason, e.g., High Spread, High Reversal Risk (Divergence), High Reversal Risk (Exhaustion), Strong Conflict with 1h Level, Insufficient Confluence, Conflicting Signals, Poor RRR, Lack of Space, Price Between Levels]"})))
 
-Execute the analysis now based only on the provided data and the strict rules outlined above. Perform a step-by-step reasoning process before generating the final JSON output.
+Execute analysis based ONLY on data and these rules. Perform detailed step-by-step reasoning, explicitly checking each filter.
 `;
   }
 
@@ -308,8 +294,7 @@ Reject trades '((({"no_trade": true})))' if:
 
 If we are avoiding a trade return ((({"no_trade": true})))
 
-Do a deep dive analysis before returning a JSON response
+Execute analysis based ONLY on data and this framework. Perform detailed step-by-step reasoning before returning a JSON response
 `;
   }
 }
-
