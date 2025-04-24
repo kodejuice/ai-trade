@@ -47,7 +47,7 @@ export const getOpenAIReponse = async ({
       });
     }
 
-    console.error("Error getting chat response:", `${error}`);
+    // console.error("Error getting chat response:", `${error}`);
     lastModelUsed = null;
     return "N/A";
   }

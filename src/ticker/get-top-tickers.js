@@ -29,7 +29,7 @@ const filterTradableTickers = async (tickers, limit) => {
         if (tradable.length >= limit) break;
       }
     } catch (err) {
-      console.log("Error getting fundamentals for", ticker);
+      // console.log("Error getting fundamentals for", ticker);
     }
   }
 
