@@ -256,7 +256,7 @@ export const symbolIsForex = (symbol) => {
 
 export const symbolIsCrypto = (symbol) => {
   const s = `${symbol}`;
-  return s.endsWith("-USD") && SYMBOLS.crypto.includes(s.slice(0, -4));
+  return s.endsWith("-USD") && SYMBOLS.crypto.includes(s.replace("-USD", "USD"));
 };
 
 export const getAllTickers = () => {
