@@ -151,6 +151,10 @@ export class TradeParams {
 
   static _isValidTradeParams(params) {
     if (!params) return false;
+    if (params.spread && parseFloat(params.spread) > 0.5) {
+      console.log(`Large spread detected => ${JSON.stringify(params)}`);
+      return false;
+    }
     return (
       !params.no_trade &&
       ["buy", "sell"].includes(params.order_type) &&

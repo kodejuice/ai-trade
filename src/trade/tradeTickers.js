@@ -1,4 +1,4 @@
-import { getTradableTickers } from "../ticker/get-tradable-tickers";
+import { getTradableTickers } from "../ticker/get-tradable-tickers.js";
 
 export const getTickersForTrading = async (tradeType) => {
   const tickers = await getTradableTickers(tradeType, 100);
@@ -9,8 +9,15 @@ export const getTickersForTrading = async (tradeType) => {
       ? tickers.slice(0, Math.floor(tickers.length * 0.47))
       : tickers;
 
+  if (T.length == 0) {
+    console.log(
+      `[${tradeType}]: No tickers available for trading, is your internet connected? \n`
+    );
+    return [];
+  }
+
   console.log(
-    `[${tradeType}]: ${T.length} tickers ready for trading => ${T}\n`
+    `[${tradeType}]: ${T.length} tickers ready for trading: ${T}\n`
   );
 
   return T;
