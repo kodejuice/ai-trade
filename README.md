@@ -1,8 +1,10 @@
 # AI Trading Bot 🤖 + LLMs 🧠 = 💰
 
-A trading bot that uses LLMs (Gemini, Groq, OpenAI) to analyze market data and make trading decisions. Built because I was tired of staring at charts all day. Still a work in progress, but it's making some interesting trades!
+A trading bot that uses LLMs (Gemini, GPT, ...) to analyze market data and make trading decisions. Built because I was tired of staring at charts all day. Still a work in progress, but it's making some interesting trades!
 
 ## How This Thing Works 🔧
+
+Unlike other trading bots where **you have to define a fixed strategy**, this one uses large language models to **reason about the data in real time** — deciding *whether* to trade and *how* to trade based on market conditions.
 
 ### 1. Market Data Pipeline
 
