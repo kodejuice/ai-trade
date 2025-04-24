@@ -1,5 +1,9 @@
 import { getFullTickerData } from "../ticker/get-full-ticker-data.js";
-import { yfinanceMapping } from "../ticker/tickers.js";
+import {
+  symbolIsCrypto,
+  symbolIsForex,
+  yfinanceMapping,
+} from "../ticker/tickers.js";
 import { metaTradeAPI } from "./metaTradeApi.js";
 import { formatCurrency } from "../helpers/util.js";
 
@@ -44,9 +48,19 @@ export class TradePromptGenerator {
     const technicalIndicators_1h =
       tickerData_1hr?.quotes?.at(-1).technicalIndicators || {};
 
+    const symbol = tickerData.fundamentals.symbol;
+    const market = symbolIsCrypto(symbol)
+      ? "Crypto"
+      : symbolIsForex(symbol)
+      ? "Forex"
+      : "Stock";
+
     return `Objective: Act as an expert multi-timeframe scalp trader simulating discretionary judgment. Analyze asset data to identify HIGH-PROBABILITY, short-term (30min chart focus) trade opportunities, rigorously filtering signals using 1-hour context, price action, momentum quality, and reversal checks. Base decisions strictly on the enhanced rules. Prioritize capital preservation; only recommend a trade if multiple categories of evidence strongly align and risk is well-defined. Aim to filter for trades with a higher likelihood of success (>66% target requires filtering out borderline setups).
 
 Input Data:
+- Market: ${market} market
+- Symbol: ${symbol}
+
 - Lower Timeframe (30min) Ticker Data: ${JSON.stringify(tickerData, null, 1)}
 - Lower Timeframe (30min) Technical Indicators:
     - ADX: ${JSON.stringify(technicalIndicators.ADX)}
@@ -57,7 +71,9 @@ Input Data:
     - EMA9: ${technicalIndicators.EMA9}
     - EMA20: ${technicalIndicators.EMA20}
     - RSI: ${technicalIndicators.RSI}
-    - Stochastic (%K, %D): ${technicalIndicators.STOCH?.k}, ${technicalIndicators.STOCH?.d}
+    - Stochastic (%K, %D): ${technicalIndicators.STOCH?.k}, ${
+      technicalIndicators.STOCH?.d
+    }
     - ATR (30min): ${technicalIndicators.ATR}
     - Volume (Current/Recent Avg):
       Current: ${tickerData.volumeMetrics?.["current volume (30 min)"]} (30 min)
@@ -70,14 +86,22 @@ Input Data:
     - BB_Upper_1h: ${technicalIndicators_1h.BBANDS?.upper}
     - BB_Lower_1h: ${technicalIndicators_1h.BBANDS?.lower}
     - RSI_1h: ${technicalIndicators_1h.RSI}
-    - Most Recent 1h Ticker Data: ${JSON.stringify(tickerData_1hr?.quotes?.at(-1), null, 1)}
+    - Most Recent 1h Ticker Data: ${JSON.stringify(
+      tickerData_1hr?.quotes?.at(-1),
+      null,
+      1
+    )}
 
 Structured Analysis & Decision Process (Follow Sequentially & Rigorously):
 
 Phase 1: Pre-Trade Checks (Fail Fast - Based on 30min Data)
 
+If its a Forex Market, then ignore all analysis that has to do with volume, volume metrics, and volume indicators.
+
 1.  Data Integrity: All required 30min and 1h indicators, price, volume, and recent candle data available and numeric? If NO, output 'no_trade' (Reason: Incomplete Data).
-2.  Liquidity/Spread Check: Calculate Spread = (${tickerData.latestPrice.ask} - ${
+2.  Liquidity/Spread Check: Calculate Spread = (${
+      tickerData.latestPrice.ask
+    } - ${
       tickerData.latestPrice.bid
     }). Calculate Spread Percentage = (Spread / ${
       tickerData.latestPrice.ask
@@ -105,7 +129,9 @@ Phase 2: Multi-Timeframe Market Analysis & Context
     -   ADX (30min): Use ADX = ${JSON.stringify(technicalIndicators.ADX)}.
       Determine Ranging (<=25) or Trending (>25).
     -   Volatility (30min): Assess BB width (expanding/contracting) and ATR (spiking/stable/low). Note if volatility seems unusually high (potential exhaustion) or low (potential consolidation setup).
-        -   BB Width (30min) = (upper: ${technicalIndicators.BBANDS?.upper} - lower: ${technicalIndicators.BBANDS?.lower}).
+        -   BB Width (30min) = (upper: ${
+          technicalIndicators.BBANDS?.upper
+        } - lower: ${technicalIndicators.BBANDS?.lower}).
     Is width expanding?
       -   Is 30min volume surging?
       -   If BB width expanding rapidly OR price breaking 30min bands with high volume: Consider Volatile/Breakout (30min).
@@ -114,13 +140,11 @@ Phase 2: Multi-Timeframe Market Analysis & Context
     -   Current Ask Price: ${tickerData.latestPrice.ask}
     -   Current Bid Price: ${tickerData.latestPrice.bid}
     -   Price Location: Identify proximity to 30min key levels (BBs, EMAs). Is price AT a level or BETWEEN levels?
-    BB Upper (${
-      technicalIndicators.BBANDS?.upper
-    }), BB Lower (${technicalIndicators.BBANDS?.lower}), BB Middle (${
-      technicalIndicators.BBANDS?.middle
-    }), EMA9 (${technicalIndicators.EMA9}), EMA20 (${
-      technicalIndicators.EMA20
-    }).
+    BB Upper (${technicalIndicators.BBANDS?.upper}), BB Lower (${
+      technicalIndicators.BBANDS?.lower
+    }), BB Middle (${technicalIndicators.BBANDS?.middle}), EMA9 (${
+      technicalIndicators.EMA9
+    }), EMA20 (${technicalIndicators.EMA20}).
     -   Micro-Structure (Last 3-5 candles): Analyze recent candles. Is there a clear impulse move? Consolidation/flag? Rejection wicks? Deceleration near a level?
 
 Phase 3: Strategy Formulation & Rigorous Filtering
@@ -151,7 +175,6 @@ Phase 3: Strategy Formulation & Rigorous Filtering
     -   If 30min Market Conditions = Volatile/Breakout: Select "Volatile/Breakout - Confirmation Entry".
         -   Entry Condition: Wait for clear 30min breakout confirmed by volume surge & candle close beyond a key 30min level. Enter in direction of breakout.
 
-
 8.  Entry Condition Check & Quality Assessment:
     -   Check specific entry conditions for the selected strategy (e.g., Buy near BB Low + RSI <= 30 + Stoch <= 20 for Ranging).
     -   Momentum Quality: Is the oscillator (RSI/Stoch) decisively moving into/out of OB/OS zones, or just hovering? Is the crossover (if applicable) sharp?
@@ -175,8 +198,12 @@ Phase 4: Trade Execution Plan (Only if ALL filters passed)
 12. Entry Price Reference: Ask for Buy, Bid for Sell. Consider waiting for candle close confirmation or slight pullback after signal if appropriate.
 13. Risk Management Calculation (Based on 30min ATR):
     -   ATR Value (30min): ${technicalIndicators.ATR}
-    -   Stop Loss (SL): Entry Price +/- (2 * ${technicalIndicators.ATR}). Ensure SL is placed logically beyond the opposing structure/level where possible.
-    -   Take Profit (TP): Calculate Initial TP = Entry Price +/- (1.5 * ${technicalIndicators.ATR}). Check if nearest significant 30min OR 1h S/R level is CLOSER than initial TP. Final TP = the CLOSER of the calculated TP or the key S/R level.
+    -   Stop Loss (SL): Entry Price +/- (2 * ${
+      technicalIndicators.ATR
+    }). Ensure SL is placed logically beyond the opposing structure/level where possible.
+    -   Take Profit (TP): Calculate Initial TP = Entry Price +/- (1.5 * ${
+      technicalIndicators.ATR
+    }). Check if nearest significant 30min OR 1h S/R level is CLOSER than initial TP. Final TP = the CLOSER of the calculated TP or the key S/R level.
     -   "Room to Move" Check: Is the distance to the first minor opposing level (e.g., 30m BB Middle Band, nearest EMA) > 0.75 * ATR? If not, trade might be too constrained. Consider 'no_trade' (Reason: Lack of Space).
     -   Risk/Reward Ratio (RRR): Calculate (Final TP - Entry) / (Entry - SL). MUST be >= 1.5. If RRR < 1.5, output 'no_trade' (Reason: Poor RRR).
 14. Confidence Score: Assign score (1-10). Higher scores (8+) require: Strong confluence across categories, Clear alignment with 1h context, No reversal warnings passed filter, Clear price action, Good RRR with room to move. Lower scores (5-7) for adequate but less perfect setups. Below 5 should likely be filtered out by earlier steps.
@@ -202,7 +229,8 @@ Output Format:
       "take_profit": [Calculated numeric value from Step 11],
       "stop_loss": [Calculated numeric value from Step 11],
       "risk_reward_ratio": [Calculated numeric value from Step 11],
-      "confidence_score": [1-10 integer based on Step 13]
+      "confidence_score": [1-10 integer based on Step 13],
+      "spread": [Spread value from Step 2]
     })))
 
 -   If no trade:
@@ -269,6 +297,12 @@ Note:
 - AVOID trading when there's low liquidity / low volume
 - AVOID trading if the provided data is incomplete
 - AVOID trading when there is a wide spread between bid/ask
+- Liquidity/Spread Check: Calculate Spread = (${tickerData.latestPrice.ask} - ${
+      tickerData.latestPrice.bid
+    }).
+  Calculate Spread Percentage = (Spread / ${tickerData.latestPrice.ask}) * 100.
+  - If Spread Percentage > 0.5%, AVOID trading (Reason: High Spread).
+
 
 Response format:
 ((({
@@ -281,7 +315,8 @@ Response format:
   "take_profit": target_price,
   "stop_loss": calculated_price,
   "time_horizon": "5-14 days",
-  "confidence_score": 1-10
+  "confidence_score": 1-10,
+  "spread": [Spread Percentage value],
 })))
 
 Reject trades '((({"no_trade": true})))' if:
@@ -291,6 +326,7 @@ Reject trades '((({"no_trade": true})))' if:
 - Not enough confirmation
 - Conflicting technical/fundamental signals
 - There is low liquidity or volume
+- Spread is greater than 0.5%
 
 If we are avoiding a trade return ((({"no_trade": true})))
 

@@ -47,6 +47,8 @@ export async function getFundamentals(symbol) {
     const quote = await yahooFinance.quote(symbol);
 
     const fundamentals = {
+      symbol,
+
       marketStatus: {
         state: quote.marketState?.toLowerCase(), // "prepre", "pre", "post", "postpost", "regular", "closed"
       },

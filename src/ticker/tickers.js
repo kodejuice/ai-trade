@@ -230,11 +230,33 @@ export const yfinanceMapping = {
     }
 
     if (SYMBOLS.forex.includes(symbol)) {
-      return symbol + "=X";
+      return `${symbol}=X`;
+      // return symbol + "=X";
     }
 
     return symbol; // default case
   },
+};
+
+export const symbolIsStocks = (symbol) => {
+  const s = `${symbol}`;
+  // US
+  if (SYMBOLS.stocks.us.includes(`${s}.NYSE`)) return true;
+  if (SYMBOLS.stocks.us.includes(`${s}.NAS`)) return true;
+
+  // Japan
+  return s.endsWith('.T'); // (should work i guess)
+  // return SYMBOLS.stocks.japan.includes(symbol);
+};
+
+export const symbolIsForex = (symbol) => {
+  const s = `${symbol}`;
+  return s.endsWith("=X") && SYMBOLS.forex.includes(s.slice(0, -2));
+};
+
+export const symbolIsCrypto = (symbol) => {
+  const s = `${symbol}`;
+  return s.endsWith("-USD") && SYMBOLS.crypto.includes(s.slice(0, -4));
 };
 
 export const getAllTickers = () => {
@@ -245,6 +267,6 @@ export const getAllTickers = () => {
     ...SYMBOLS.stocks.us,
     ...SYMBOLS.stocks.japan,
   ];
-  return tickers;
-  // return tickers.sort(() => Math.random() - 0.5);
+  // return tickers;
+  return tickers.sort(() => Math.random() - 0.5);
 };
