@@ -47,9 +47,9 @@ export class TradePromptGenerator {
     const technicalIndicators =
       tickerData?.quotes?.at(-1)?.technicalIndicators || {};
     const technicalIndicators_1h =
-      tickerData_1hr?.quotes?.at(-1).technicalIndicators || {};
+      tickerData_1hr?.quotes?.at(-1)?.technicalIndicators || {};
 
-    const symbol = tickerData.fundamentals.symbol;
+    const symbol = tickerData?.fundamentals?.symbol || '';
     const market = symbolIsCrypto(symbol)
       ? "Crypto"
       : symbolIsForex(symbol)
