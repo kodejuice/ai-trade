@@ -1,14 +1,12 @@
-import { mergeSort } from "../helpers/merge-sort.js";
-import { getTopTickers } from "../ticker/get-top-tickers.js";
-import { metaTradeAPI } from "./metaTradeApi.js";
+import { getTradableTickers } from "../ticker/get-tradable-tickers";
 
 export const getTickersForTrading = async (tradeType) => {
-  const tickers = await getTopTickers(tradeType, 100);
+  const tickers = await getTradableTickers(tradeType, 100);
 
-  // return first 46% of the tickers
+  // return first 47% of the tickers
   const T =
     tickers.length >= 100
-      ? tickers.slice(0, Math.floor(tickers.length * 0.46))
+      ? tickers.slice(0, Math.floor(tickers.length * 0.47))
       : tickers;
 
   console.log(

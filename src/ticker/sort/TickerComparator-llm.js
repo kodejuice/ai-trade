@@ -1,7 +1,9 @@
-import { getCachedResult } from "../helpers/cache.js";
-import { LLMResponse } from "../helpers/llm/llm.js";
-import { getTickerPreview } from "./get-preview-ticker-data.js";
-import { yfinanceMapping } from "./tickers.js";
+// NOTE: No longer used, but keeping for reference
+
+import { getCachedResult } from "../../helpers/cache.js";
+import { LLMResponse } from "../../helpers/llm/llm.js";
+import { getTickerPreview } from "../get-preview-ticker-data.js";
+import { yfinanceMapping } from "../tickers.js";
 
 export class TickerComparator {
   static async compare(ticker1, ticker2, tradeType) {
@@ -54,4 +56,3 @@ Your response should be in the following format:
     return 0;
   }
 }
-

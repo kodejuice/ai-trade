@@ -1,27 +1,19 @@
-import { mergeSort } from "../helpers/merge-sort.js";
-import { msToTime } from "../helpers/util.js";
-import { getAllTickers, yfinanceMapping } from "./tickers.js";
+// NOTE: No longer used, but keeping for reference
+
+import { mergeSort } from "../../helpers/merge-sort.js";
+import { msToTime } from "../../helpers/util.js";
+import { getAllTickers, yfinanceMapping } from "../tickers.js";
 
 import { TickerComparator } from "./TickerComparator-algorithm.js";
-import { getCachedResult, setCachedResult } from "../helpers/cache.js";
-import { getTickerPreview } from "./get-preview-ticker-data.js";
-import { TICKERS_CACHE_DURATION } from "./get-top-tickers.js";
+import { setCachedResult } from "../../helpers/cache.js";
+
+export const TICKERS_CACHE_DURATION = 60 * 60 * 7; // 7 hours
 
 const LOG_INTERVAL = 1000 * 60 * 5; // 5 minutes
 
 export const sortTickers = async (tradeType) => {
   const tickers = getAllTickers();
   const comparisonCount = ~~(tickers.length * Math.log2(tickers.length));
-
-  // // cache preview data for each ticker
-  // console.log(`\nPre-caching ${tickers.length} ticker preview data...`)
-  // for (const t of tickers) {
-  //   await getCachedResult(
-  //     `ai-trade-preview-${t}`,
-  //     () => getTickerPreview(yfinanceMapping.mapSymbol(t)),
-  //     60 * 60 * 1, // 1 hour
-  //   );
-  // }
 
   logSortingStart(tickers.length, tradeType, comparisonCount);
 
