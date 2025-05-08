@@ -1,3 +1,5 @@
+![AI trade](img.png "AI Trade Image")
+
 # AI Trading Bot 🤖 + LLMs 🧠 = 💰
 
 A trading bot that uses LLMs (Gemini, GPT, ...) to analyze market data and make trading decisions. Built because I was tired of staring at charts all day. Still a work in progress, but it's making some interesting trades!
@@ -104,4 +106,4 @@ This is experimental software. It can and will lose money. Don't blame me if it 
 
 ## License
 
-MIT - Do whatever you want with it, just don't sue me 🤷‍♂️
+[MIT](LICENSE) - Do whatever you want with it, just don't sue me 🤷‍♂️
