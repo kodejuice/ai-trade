@@ -1,3 +1,5 @@
+> # Note: This project is going through a major overhaul
+
 ![AI trade](img.png "AI Trade Image")
 
 # AI Trading Bot 🤖 + LLMs 🧠 = 💰
