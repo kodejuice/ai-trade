@@ -1,4 +1,4 @@
-> # Note: This project is going through a major overhaul
+> # Note: This project is going through a major overhaul (18th July, 2025)
 
 ![AI trade](img.png "AI Trade Image")
 
